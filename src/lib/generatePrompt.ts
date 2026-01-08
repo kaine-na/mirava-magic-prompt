@@ -10,17 +10,22 @@ interface GenerateOptions {
   baseUrl?: string;
 }
 
-export async function generatePrompt({
+interface BatchGenerateOptions extends GenerateOptions {
+  batchSize: number;
+}
+
+// Single prompt generation
+async function generateSinglePrompt({
   apiKey,
   provider,
   model,
   promptType,
   userInput,
   baseUrl: customBaseUrl,
-}: GenerateOptions): Promise<string> {
+  variationIndex,
+}: GenerateOptions & { variationIndex: number }): Promise<string> {
   const systemPrompt = getPromptTemplate(promptType, userInput);
   
-  // Get base URL - all providers use OpenAI-compatible format
   let baseUrl: string;
   
   if (provider === "custom") {
@@ -32,7 +37,6 @@ export async function generatePrompt({
     baseUrl = providerEndpoints[provider].base;
   }
 
-  // All providers use OpenAI-compatible chat completions format
   const response = await fetch(`${baseUrl}/chat/completions`, {
     method: "POST",
     headers: {
@@ -44,7 +48,8 @@ export async function generatePrompt({
       messages: [
         { 
           role: "system", 
-          content: `You are an expert prompt engineer. Generate the BEST possible prompt based on user input.
+          content: `You are an expert prompt engineer. Generate a UNIQUE and CREATIVE prompt variation based on user input.
+This is variation #${variationIndex + 1} - make it distinctly different from other variations while keeping the core concept.
 
 ABSOLUTE OUTPUT RULES - FOLLOW EXACTLY:
 1. Output ONLY the final prompt text - NOTHING ELSE
@@ -58,6 +63,12 @@ ABSOLUTE OUTPUT RULES - FOLLOW EXACTLY:
 9. NO quotes around the prompt
 10. JUST the pure prompt text as one flowing sentence
 
+VARIATION GUIDELINES (Variation #${variationIndex + 1}):
+- Each variation should explore a DIFFERENT creative direction
+- Vary the style, mood, perspective, or artistic approach
+- Use different descriptive words and compositional choices
+- Make this variation feel fresh and unique
+
 PROMPT QUALITY:
 - Rich, vivid, and highly detailed descriptions
 - Use commas to separate concepts naturally
@@ -70,6 +81,7 @@ START YOUR RESPONSE DIRECTLY WITH THE PROMPT CONTENT.`
         { role: "user", content: systemPrompt },
       ],
       max_tokens: 500,
+      temperature: 0.9 + (variationIndex * 0.05), // Slightly vary temperature per request
     }),
   });
 
@@ -81,33 +93,67 @@ START YOUR RESPONSE DIRECTLY WITH THE PROMPT CONTENT.`
   const data = await response.json();
   const rawPrompt = data.choices[0].message.content || "";
   
-  // Clean and parse the prompt to single line without symbols or tags
   return parsePrompt(rawPrompt);
+}
+
+// Batch parallel generation
+export async function generatePromptBatch({
+  apiKey,
+  provider,
+  model,
+  promptType,
+  userInput,
+  baseUrl,
+  batchSize,
+}: BatchGenerateOptions): Promise<string[]> {
+  // Create array of promises for parallel execution
+  const promises = Array.from({ length: batchSize }, (_, index) =>
+    generateSinglePrompt({
+      apiKey,
+      provider,
+      model,
+      promptType,
+      userInput,
+      baseUrl,
+      variationIndex: index,
+    })
+  );
+
+  // Execute all in parallel
+  const results = await Promise.allSettled(promises);
+  
+  // Extract successful results, throw if all failed
+  const successfulPrompts = results
+    .filter((result): result is PromiseFulfilledResult<string> => result.status === "fulfilled")
+    .map(result => result.value);
+
+  if (successfulPrompts.length === 0) {
+    const firstError = results.find((r): r is PromiseRejectedResult => r.status === "rejected");
+    throw new Error(firstError?.reason?.message || "All prompt generations failed");
+  }
+
+  return successfulPrompts;
+}
+
+// Legacy single prompt (for backwards compatibility)
+export async function generatePrompt(options: GenerateOptions): Promise<string> {
+  return generateSinglePrompt({ ...options, variationIndex: 0 });
 }
 
 function parsePrompt(text: string): string {
   return text
-    // Remove XML-like tags and their content for thinking/metadata tags
     .replace(/<thinking>[\s\S]*?<\/thinking>/gi, "")
     .replace(/<output>[\s\S]*?<\/output>/gi, "")
     .replace(/<prompt>[\s\S]*?<\/prompt>/gi, "")
     .replace(/<result>[\s\S]*?<\/result>/gi, "")
-    // Remove any remaining XML-like tags (but keep content between them)
     .replace(/<\/?[a-zA-Z][^>]*>/g, "")
-    // Remove common prefixes
     .replace(/^(here('s| is)|prompt:?|generated:?|result:?|output:?)\s*/gi, "")
-    // Remove markdown formatting
     .replace(/[*#`_~]/g, "")
-    // Remove bullet points and list markers
     .replace(/^[-•●○▪]\s*/gm, "")
     .replace(/^\d+\.\s*/gm, "")
-    // Convert line breaks to spaces
     .replace(/[\r\n]+/g, " ")
-    // Remove multiple spaces
     .replace(/\s+/g, " ")
-    // Remove quotes at start/end
     .replace(/^["']|["']$/g, "")
-    // Trim
     .trim();
 }
 
