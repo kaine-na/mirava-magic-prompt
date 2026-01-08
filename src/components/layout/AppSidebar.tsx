@@ -106,6 +106,41 @@ export function AppSidebar({ selectedPromptType, onSelectPromptType }: AppSideba
             "flex-1 flex flex-col gap-1",
             isOpen ? "px-3" : "items-center"
           )}>
+            {/* Settings at top */}
+            <Link
+              to="/settings"
+              className={cn(
+                "flex items-center rounded-xl transition-all duration-200",
+                isOpen ? "gap-3 py-2.5 px-2 w-full" : "p-2 justify-center",
+                isSettingsActive ? "bg-muted" : "hover:bg-muted/50"
+              )}
+            >
+              <motion.div 
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+                className="w-10 h-10 rounded-full border-2 border-foreground bg-muted flex items-center justify-center flex-shrink-0"
+              >
+                <Settings className="h-5 w-5" strokeWidth={2.5} />
+              </motion.div>
+              <AnimatePresence>
+                {isOpen && (
+                  <motion.span
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -10 }}
+                    className="font-semibold text-base whitespace-nowrap"
+                  >
+                    Settings
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </Link>
+
+            <div className={cn(
+              "my-3 border-t border-border",
+              isOpen ? "" : "w-10"
+            )} />
+
             <AnimatePresence>
               {isOpen && (
                 <motion.span
@@ -179,40 +214,6 @@ export function AppSidebar({ selectedPromptType, onSelectPromptType }: AppSideba
                 </button>
               );
             })}
-
-            <div className={cn(
-              "my-3 border-t border-border",
-              isOpen ? "" : "w-10"
-            )} />
-
-            <Link
-              to="/settings"
-              className={cn(
-                "flex items-center rounded-xl transition-all duration-200",
-                isOpen ? "gap-3 py-2.5 px-2 w-full" : "p-2 justify-center",
-                isSettingsActive ? "bg-muted" : "hover:bg-muted/50"
-              )}
-            >
-              <motion.div 
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
-                className="w-10 h-10 rounded-full border-2 border-foreground bg-muted flex items-center justify-center flex-shrink-0"
-              >
-                <Settings className="h-5 w-5" strokeWidth={2.5} />
-              </motion.div>
-              <AnimatePresence>
-                {isOpen && (
-                  <motion.span
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -10 }}
-                    className="font-semibold text-base whitespace-nowrap"
-                  >
-                    Settings
-                  </motion.span>
-                )}
-              </AnimatePresence>
-            </Link>
           </nav>
 
           <AnimatePresence>
@@ -286,6 +287,23 @@ function MobileSidebar({
               className="fixed left-0 top-14 bottom-0 w-64 bg-sidebar border-r-2 border-foreground z-50 p-4"
             >
               <nav className="flex flex-col gap-1">
+                {/* Settings at top */}
+                <Link
+                  to="/settings"
+                  onClick={() => setIsOpen(false)}
+                  className={cn(
+                    "flex items-center gap-3 py-2.5 px-2 rounded-xl transition-all duration-200",
+                    isSettingsActive ? "bg-muted" : "hover:bg-muted/50"
+                  )}
+                >
+                  <div className="w-9 h-9 rounded-full border-2 border-foreground bg-muted flex items-center justify-center">
+                    <Settings className="h-4 w-4" strokeWidth={2.5} />
+                  </div>
+                  <span className="font-semibold text-base">Settings</span>
+                </Link>
+
+                <div className="my-3 border-t border-border" />
+
                 <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider px-1 mb-2">
                   Generative AI
                 </span>
@@ -316,22 +334,6 @@ function MobileSidebar({
                     </button>
                   );
                 })}
-
-                <div className="my-3 border-t border-border" />
-
-                <Link
-                  to="/settings"
-                  onClick={() => setIsOpen(false)}
-                  className={cn(
-                    "flex items-center gap-3 py-2.5 px-2 rounded-xl transition-all duration-200",
-                    isSettingsActive ? "bg-muted" : "hover:bg-muted/50"
-                  )}
-                >
-                  <div className="w-9 h-9 rounded-full border-2 border-foreground bg-muted flex items-center justify-center">
-                    <Settings className="h-4 w-4" strokeWidth={2.5} />
-                  </div>
-                  <span className="font-semibold text-base">Settings</span>
-                </Link>
               </nav>
             </motion.div>
           </>
