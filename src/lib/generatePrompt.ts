@@ -44,18 +44,28 @@ export async function generatePrompt({
       messages: [
         { 
           role: "system", 
-          content: `You are an expert prompt engineer. Your task is to generate the BEST possible prompt based on user input.
+          content: `You are an expert prompt engineer. Generate the BEST possible prompt based on user input.
 
-CRITICAL OUTPUT RULES:
-1. Output ONLY the final prompt text - nothing else
-2. The prompt MUST be a single continuous line (no line breaks)
-3. NO special symbols like *, #, -, •, etc.
-4. NO markdown formatting
-5. NO prefixes like "Prompt:", "Here is:", "Generated:"
-6. NO explanations before or after the prompt
-7. The prompt should be rich, detailed, and optimized for AI generation
-8. Use natural flowing language with commas to separate concepts
-9. Include style, mood, lighting, composition, and quality descriptors where relevant` 
+ABSOLUTE OUTPUT RULES - FOLLOW EXACTLY:
+1. Output ONLY the final prompt text - NOTHING ELSE
+2. The prompt MUST be a SINGLE continuous line (NO line breaks, NO paragraphs)
+3. NO XML tags like <thinking>, <output>, <prompt>, or any <tag></tag> format
+4. NO special symbols: *, #, -, •, **, ##, etc.
+5. NO markdown formatting whatsoever
+6. NO prefixes: "Prompt:", "Here is:", "Generated:", "Output:", "Result:"
+7. NO explanations, introductions, or conclusions
+8. NO numbered lists or bullet points
+9. NO quotes around the prompt
+10. JUST the pure prompt text as one flowing sentence
+
+PROMPT QUALITY:
+- Rich, vivid, and highly detailed descriptions
+- Use commas to separate concepts naturally
+- Include style, mood, lighting, atmosphere, composition
+- Add quality enhancers and specific artistic direction
+- Make it immediately usable for AI generation
+
+START YOUR RESPONSE DIRECTLY WITH THE PROMPT CONTENT.` 
         },
         { role: "user", content: systemPrompt },
       ],
@@ -71,14 +81,21 @@ CRITICAL OUTPUT RULES:
   const data = await response.json();
   const rawPrompt = data.choices[0].message.content || "";
   
-  // Clean and parse the prompt to single line without symbols
+  // Clean and parse the prompt to single line without symbols or tags
   return parsePrompt(rawPrompt);
 }
 
 function parsePrompt(text: string): string {
   return text
+    // Remove XML-like tags and their content for thinking/metadata tags
+    .replace(/<thinking>[\s\S]*?<\/thinking>/gi, "")
+    .replace(/<output>[\s\S]*?<\/output>/gi, "")
+    .replace(/<prompt>[\s\S]*?<\/prompt>/gi, "")
+    .replace(/<result>[\s\S]*?<\/result>/gi, "")
+    // Remove any remaining XML-like tags (but keep content between them)
+    .replace(/<\/?[a-zA-Z][^>]*>/g, "")
     // Remove common prefixes
-    .replace(/^(here('s| is)|prompt:?|generated:?|result:?)\s*/gi, "")
+    .replace(/^(here('s| is)|prompt:?|generated:?|result:?|output:?)\s*/gi, "")
     // Remove markdown formatting
     .replace(/[*#`_~]/g, "")
     // Remove bullet points and list markers
