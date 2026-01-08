@@ -153,17 +153,34 @@ function SidebarContent({
                         {/* Active indicator dot */}
                         <AnimatePresence>
                           {isActive && (
-                            <motion.div
-                              initial={{ scale: 0, opacity: 0 }}
-                              animate={{ scale: 1, opacity: 1 }}
-                              exit={{ scale: 0, opacity: 0 }}
-                              transition={{
-                                type: "spring",
-                                stiffness: 500,
-                                damping: 25,
-                              }}
-                              className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-secondary rounded-full border-2 border-foreground"
-                            />
+                            <>
+                              {/* Pulse ring */}
+                              <motion.div
+                                initial={{ scale: 0, opacity: 0 }}
+                                animate={{ 
+                                  scale: [1, 1.8, 1.8],
+                                  opacity: [0.6, 0, 0],
+                                }}
+                                transition={{
+                                  duration: 1.5,
+                                  repeat: Infinity,
+                                  ease: "easeOut",
+                                }}
+                                className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-secondary rounded-full"
+                              />
+                              {/* Main dot */}
+                              <motion.div
+                                initial={{ scale: 0, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                exit={{ scale: 0, opacity: 0 }}
+                                transition={{
+                                  type: "spring",
+                                  stiffness: 500,
+                                  damping: 25,
+                                }}
+                                className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-secondary rounded-full border-2 border-foreground"
+                              />
+                            </>
                           )}
                         </AnimatePresence>
                       </div>
