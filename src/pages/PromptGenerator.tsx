@@ -21,7 +21,7 @@ const promptTypeLabels: Record<string, string> = {
   art: "Art Style",
 };
 
-const MAX_BATCH_SIZE = 10;
+
 
 export default function PromptGenerator() {
   const [promptType, setPromptType] = useState("image");
@@ -288,15 +288,13 @@ export default function PromptGenerator() {
                 <input
                   type="number"
                   min={1}
-                  max={MAX_BATCH_SIZE}
                   value={batchSize}
                   onChange={(e) => {
                     const val = parseInt(e.target.value) || 1;
-                    setBatchSize(Math.min(Math.max(val, 1), MAX_BATCH_SIZE));
+                    setBatchSize(Math.max(val, 1));
                   }}
                   className="w-16 h-8 px-2 text-center text-sm font-bold rounded-lg border-2 border-foreground bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                 />
-                <span className="text-xs text-muted-foreground">(max {MAX_BATCH_SIZE})</span>
               </div>
               
               <div className="flex items-center gap-3">
