@@ -10,19 +10,19 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default: 
-          "bg-primary text-primary-foreground border-2 border-foreground rounded-full shadow-hard hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-hard-md active:translate-x-[2px] active:translate-y-[2px] active:shadow-hard-sm",
+          "bg-primary text-primary-foreground border-2 border-border-strong rounded-full shadow-hard hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-hard-md active:translate-x-[2px] active:translate-y-[2px] active:shadow-hard-sm",
         candy: 
-          "bg-primary text-primary-foreground border-2 border-foreground rounded-full shadow-hard hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-hard-md active:translate-x-[2px] active:translate-y-[2px] active:shadow-hard-sm",
+          "bg-primary text-primary-foreground border-2 border-border-strong rounded-full shadow-hard hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-hard-md active:translate-x-[2px] active:translate-y-[2px] active:shadow-hard-sm",
         destructive: 
-          "bg-destructive text-destructive-foreground border-2 border-foreground rounded-full shadow-hard hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-hard-md",
+          "bg-destructive text-destructive-foreground border-2 border-border-strong rounded-full shadow-hard hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-hard-md",
         outline: 
-          "border-2 border-foreground bg-transparent rounded-full hover:bg-tertiary hover:text-tertiary-foreground transition-colors",
+          "border-2 border-border-strong bg-transparent rounded-full hover:bg-tertiary hover:text-tertiary-foreground transition-colors",
         secondary: 
-          "bg-secondary text-secondary-foreground border-2 border-foreground rounded-full shadow-hard hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-hard-md",
+          "bg-secondary text-secondary-foreground border-2 border-border-strong rounded-full shadow-hard hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-hard-md",
         tertiary:
-          "bg-tertiary text-tertiary-foreground border-2 border-foreground rounded-full shadow-hard hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-hard-md",
+          "bg-tertiary text-tertiary-foreground border-2 border-border-strong rounded-full shadow-hard hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-hard-md",
         quaternary:
-          "bg-quaternary text-quaternary-foreground border-2 border-foreground rounded-full shadow-hard hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-hard-md",
+          "bg-quaternary text-quaternary-foreground border-2 border-border-strong rounded-full shadow-hard hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-hard-md",
         ghost: 
           "hover:bg-accent hover:text-accent-foreground rounded-lg",
         link: 

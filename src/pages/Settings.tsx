@@ -87,14 +87,14 @@ function ThemeSelector() {
                 className={cn(
                   "relative p-3 sm:p-4 rounded-xl sm:rounded-2xl border-2 transition-all duration-200 text-center",
                   isSelected
-                    ? "border-foreground bg-card shadow-hard-sm sm:shadow-hard"
-                    : "border-border bg-card/50 hover:border-foreground hover:shadow-hard-sm"
+                    ? "border-border-strong bg-card shadow-hard-sm sm:shadow-hard"
+                    : "border-border bg-card/50 hover:border-border-strong hover:shadow-hard-sm"
                 )}
               >
                 <div className="flex flex-col items-center gap-2">
                   <div
                     className={cn(
-                      "w-10 h-10 rounded-full border-2 border-foreground flex items-center justify-center",
+                      "w-10 h-10 rounded-full border-2 border-border-strong flex items-center justify-center",
                       option.value === "light" && "bg-tertiary",
                       option.value === "dark" && "bg-primary",
                       option.value === "system" && "bg-muted"
@@ -105,7 +105,7 @@ function ThemeSelector() {
                   <span className="font-semibold text-xs sm:text-sm">{option.label}</span>
                 </div>
                 {isSelected && (
-                  <div className="absolute -top-1.5 -right-1.5 sm:-top-2 sm:-right-2 w-5 h-5 sm:w-6 sm:h-6 bg-tertiary rounded-full border-2 border-foreground flex items-center justify-center">
+                  <div className="absolute -top-1.5 -right-1.5 sm:-top-2 sm:-right-2 w-5 h-5 sm:w-6 sm:h-6 bg-tertiary rounded-full border-2 border-border-strong flex items-center justify-center">
                     <Check className="h-2.5 w-2.5 sm:h-3 sm:w-3" strokeWidth={3} />
                   </div>
                 )}
@@ -262,7 +262,7 @@ export default function Settings() {
 
         {/* Header */}
         <div className="text-center mb-8 relative z-10">
-          <div className="inline-flex items-center gap-2 bg-secondary px-3 py-1.5 sm:px-4 sm:py-2 rounded-full border-2 border-foreground shadow-hard-sm sm:shadow-hard mb-4">
+          <div className="inline-flex items-center gap-2 bg-secondary px-3 py-1.5 sm:px-4 sm:py-2 rounded-full border-2 border-border-strong shadow-hard-sm sm:shadow-hard mb-4">
             <SettingsIcon className="h-4 w-4 sm:h-5 sm:w-5 text-secondary-foreground" strokeWidth={2.5} />
             <span className="font-semibold text-xs sm:text-sm text-secondary-foreground">Settings</span>
           </div>
@@ -300,14 +300,14 @@ export default function Settings() {
                     className={cn(
                       "relative p-3 sm:p-4 rounded-xl sm:rounded-2xl border-2 transition-all duration-200 text-left",
                       isSelected
-                        ? "border-foreground bg-card shadow-hard-sm sm:shadow-hard"
-                        : "border-border bg-card/50 hover:border-foreground hover:shadow-hard-sm"
+                        ? "border-border-strong bg-card shadow-hard-sm sm:shadow-hard"
+                        : "border-border bg-card/50 hover:border-border-strong hover:shadow-hard-sm"
                     )}
                   >
                     <div className="flex flex-col items-start gap-2 w-full overflow-hidden">
                       <div
                         className={cn(
-                          "w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 border-foreground flex items-center justify-center flex-shrink-0",
+                          "w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 border-border-strong flex items-center justify-center flex-shrink-0",
                           prov.color
                         )}
                       >
@@ -325,7 +325,7 @@ export default function Settings() {
                       <div className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 w-2 h-2 sm:w-2.5 sm:h-2.5 bg-quaternary rounded-full" />
                     )}
                     {isSelected && (
-                      <div className="absolute -top-1.5 -right-1.5 sm:-top-2 sm:-right-2 w-5 h-5 sm:w-6 sm:h-6 bg-tertiary rounded-full border-2 border-foreground flex items-center justify-center">
+                      <div className="absolute -top-1.5 -right-1.5 sm:-top-2 sm:-right-2 w-5 h-5 sm:w-6 sm:h-6 bg-tertiary rounded-full border-2 border-border-strong flex items-center justify-center">
                         <Check className="h-2.5 w-2.5 sm:h-3 sm:w-3" strokeWidth={3} />
                       </div>
                     )}

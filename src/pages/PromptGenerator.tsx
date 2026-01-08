@@ -261,7 +261,7 @@ ${generatedPrompts.join('\n')}`;
         
         {/* Header */}
         <div className="text-center mb-8 relative z-10">
-          <div className="inline-flex items-center gap-2 bg-tertiary px-3 py-1.5 sm:px-4 sm:py-2 rounded-full border-2 border-foreground shadow-hard-sm sm:shadow-hard mb-4">
+          <div className="inline-flex items-center gap-2 bg-tertiary px-3 py-1.5 sm:px-4 sm:py-2 rounded-full border-2 border-border-strong shadow-hard-sm sm:shadow-hard mb-4">
             <Sparkles className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={2.5} />
             <span className="font-semibold text-xs sm:text-sm">AI Prompt Generator</span>
           </div>
@@ -277,7 +277,7 @@ ${generatedPrompts.join('\n')}`;
         {!hasApiKey && (
           <Card className="mb-6 border-secondary shadow-secondary hover:translate-x-0 hover:translate-y-0">
             <CardContent className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 p-4">
-              <div className="w-10 h-10 bg-secondary rounded-full border-2 border-foreground flex items-center justify-center flex-shrink-0">
+              <div className="w-10 h-10 bg-secondary rounded-full border-2 border-border-strong flex items-center justify-center flex-shrink-0">
                 <AlertCircle className="h-5 w-5 text-secondary-foreground" strokeWidth={2.5} />
               </div>
               <div className="flex-1 min-w-0">
@@ -296,7 +296,7 @@ ${generatedPrompts.join('\n')}`;
         {/* Current Prompt Type & Model Badge */}
         <div className="mb-4 sm:mb-6 flex flex-wrap items-center justify-center sm:justify-start gap-2">
           <span className="text-xs sm:text-sm text-muted-foreground">Selected:</span>
-          <span className="px-2.5 py-1 sm:px-3 sm:py-1.5 bg-primary text-primary-foreground rounded-full border-2 border-foreground font-semibold text-xs sm:text-sm shadow-hard-sm">
+          <span className="px-2.5 py-1 sm:px-3 sm:py-1.5 bg-primary text-primary-foreground rounded-full border-2 border-border-strong font-semibold text-xs sm:text-sm shadow-hard-sm">
             {promptTypeLabels[promptType] || promptType}
           </span>
           {hasApiKey && (
@@ -311,7 +311,7 @@ ${generatedPrompts.join('\n')}`;
           <CardHeader className="pb-3 sm:pb-4">
             <CardTitle className="font-heading text-base sm:text-lg flex flex-col sm:flex-row sm:items-center gap-2 sm:justify-between">
               <div className="flex items-center gap-2">
-                <span className="w-7 h-7 sm:w-8 sm:h-8 bg-primary rounded-full border-2 border-foreground flex items-center justify-center text-xs sm:text-sm text-primary-foreground font-bold">1</span>
+                <span className="w-7 h-7 sm:w-8 sm:h-8 bg-primary rounded-full border-2 border-border-strong flex items-center justify-center text-xs sm:text-sm text-primary-foreground font-bold">1</span>
                 <span>Describe Your Idea</span>
               </div>
               <div className="flex items-center gap-2">
@@ -373,7 +373,7 @@ ${generatedPrompts.join('\n')}`;
                     const val = parseInt(e.target.value) || 1;
                     setBatchSize(Math.max(val, 1));
                   }}
-                  className="w-16 h-9 px-2 text-center text-sm font-bold rounded-xl border-2 border-foreground bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-16 h-9 px-2 text-center text-sm font-bold rounded-xl border-2 border-border-strong bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
               
@@ -382,7 +382,7 @@ ${generatedPrompts.join('\n')}`;
                   const ideaCount = userInput.split('\n').filter(line => line.trim()).length || 1;
                   const totalPrompts = batchSize * ideaCount;
                   return (
-                    <span className="px-3 py-2 bg-quaternary text-quaternary-foreground rounded-full border-2 border-foreground font-bold text-xs whitespace-nowrap">
+                    <span className="px-3 py-2 bg-quaternary text-quaternary-foreground rounded-full border-2 border-border-strong font-bold text-xs whitespace-nowrap">
                       Total: {totalPrompts} prompt{totalPrompts > 1 ? 's' : ''}
                     </span>
                   );
@@ -432,7 +432,7 @@ ${generatedPrompts.join('\n')}`;
             <CardHeader className="pb-3 sm:pb-4">
               <CardTitle className="font-heading text-base sm:text-lg flex flex-col sm:flex-row sm:items-center gap-2 sm:justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="w-7 h-7 sm:w-8 sm:h-8 bg-quaternary rounded-full border-2 border-foreground flex items-center justify-center text-xs sm:text-sm text-quaternary-foreground font-bold">2</span>
+                  <span className="w-7 h-7 sm:w-8 sm:h-8 bg-quaternary rounded-full border-2 border-border-strong flex items-center justify-center text-xs sm:text-sm text-quaternary-foreground font-bold">2</span>
                   <span>Generated Prompts ({generatedPrompts.length})</span>
                 </div>
                 <div className="flex items-center gap-2">

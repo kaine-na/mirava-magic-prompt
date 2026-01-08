@@ -70,10 +70,10 @@ export function AppSidebar({ selectedPromptType, onSelectPromptType }: AppSideba
               <>
                 <Link to="/" className="flex items-center gap-2.5 min-w-0">
                   <div className="relative flex-shrink-0">
-                    <div className="w-10 h-10 bg-tertiary rounded-full border-2 border-foreground shadow-hard-sm flex items-center justify-center">
+                    <div className="w-10 h-10 bg-tertiary rounded-full border-2 border-border-strong shadow-hard-sm flex items-center justify-center">
                       <Zap className="h-5 w-5 text-tertiary-foreground" strokeWidth={2.5} />
                     </div>
-                    <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-secondary rounded-full border-2 border-foreground" />
+                    <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-secondary rounded-full border-2 border-border-strong" />
                   </div>
                   <motion.h1
                     initial={{ opacity: 0 }}
@@ -118,7 +118,7 @@ export function AppSidebar({ selectedPromptType, onSelectPromptType }: AppSideba
               <motion.div 
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
-                className="w-10 h-10 rounded-full border-2 border-foreground bg-muted flex items-center justify-center flex-shrink-0"
+                className="w-10 h-10 rounded-full border-2 border-border-strong bg-muted flex items-center justify-center flex-shrink-0"
               >
                 <Settings className="h-5 w-5" strokeWidth={2.5} />
               </motion.div>
@@ -171,7 +171,7 @@ export function AppSidebar({ selectedPromptType, onSelectPromptType }: AppSideba
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.95 }}
                       className={cn(
-                        "w-10 h-10 rounded-full border-2 border-foreground flex items-center justify-center",
+                        "w-10 h-10 rounded-full border-2 border-border-strong flex items-center justify-center",
                         item.color
                       )}
                     >
@@ -190,7 +190,7 @@ export function AppSidebar({ selectedPromptType, onSelectPromptType }: AppSideba
                             initial={{ scale: 0 }}
                             animate={{ scale: 1 }}
                             exit={{ scale: 0 }}
-                            className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-secondary rounded-full border-2 border-foreground"
+                            className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-secondary rounded-full border-2 border-border-strong"
                           />
                         </>
                       )}
@@ -254,9 +254,9 @@ function MobileSidebar({
 
   return (
     <div className="md:hidden">
-      <div className="fixed top-0 left-0 right-0 h-14 bg-sidebar border-b-2 border-foreground flex items-center justify-between px-4 z-40">
+      <div className="fixed top-0 left-0 right-0 h-14 bg-sidebar border-b-2 border-border-strong flex items-center justify-between px-4 z-40">
         <Link to="/" className="flex items-center gap-2.5">
-          <div className="w-8 h-8 bg-tertiary rounded-full border-2 border-foreground shadow-hard-sm flex items-center justify-center flex-shrink-0">
+          <div className="w-8 h-8 bg-tertiary rounded-full border-2 border-border-strong shadow-hard-sm flex items-center justify-center flex-shrink-0">
             <Zap className="h-4 w-4 text-tertiary-foreground" strokeWidth={2.5} />
           </div>
           <span className="font-heading font-bold leading-none">PromptGen</span>
@@ -284,7 +284,7 @@ function MobileSidebar({
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
               transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              className="fixed left-0 top-14 bottom-0 w-64 bg-sidebar border-r-2 border-foreground z-50 p-4"
+              className="fixed left-0 top-14 bottom-0 w-64 bg-sidebar border-r-2 border-border-strong z-50 p-4"
             >
               <nav className="flex flex-col gap-1">
                 {/* Settings at top */}
@@ -296,7 +296,7 @@ function MobileSidebar({
                     isSettingsActive ? "bg-muted" : "hover:bg-muted/50"
                   )}
                 >
-                  <div className="w-9 h-9 rounded-full border-2 border-foreground bg-muted flex items-center justify-center">
+                  <div className="w-9 h-9 rounded-full border-2 border-border-strong bg-muted flex items-center justify-center">
                     <Settings className="h-4 w-4" strokeWidth={2.5} />
                   </div>
                   <span className="font-semibold text-base">Settings</span>
@@ -323,7 +323,7 @@ function MobileSidebar({
                       )}
                     >
                       <div className={cn(
-                        "w-9 h-9 rounded-full border-2 border-foreground flex items-center justify-center",
+                        "w-9 h-9 rounded-full border-2 border-border-strong flex items-center justify-center",
                         item.color
                       )}>
                         <item.icon className="h-4 w-4 text-primary-foreground" strokeWidth={2.5} />

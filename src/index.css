@@ -39,6 +39,7 @@
     --destructive-foreground: 0 0% 98%;
 
     --border: 215 20% 85%;
+    --border-strong: 215 25% 17%;
     --input: 215 20% 85%;
     --ring: 263 70% 66%;
 
@@ -106,8 +107,9 @@
     --destructive: 0 62% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 215 25% 25%;
-    --input: 215 25% 25%;
+    --border: 215 20% 30%;
+    --border-strong: 215 20% 40%;
+    --input: 215 20% 30%;
     --ring: 263 70% 66%;
 
     --sidebar-background: 215 25% 12%;
@@ -116,18 +118,19 @@
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 215 25% 18%;
     --sidebar-accent-foreground: 48 100% 98%;
-    --sidebar-border: 215 25% 25%;
+    --sidebar-border: 215 20% 30%;
     --sidebar-ring: 263 70% 66%;
 
-    --shadow-hard-sm: 3px 3px 0px 0px hsl(48 100% 98%);
-    --shadow-hard: 5px 5px 0px 0px hsl(48 100% 98%);
-    --shadow-hard-md: 8px 8px 0px 0px hsl(48 100% 98%);
-    --shadow-hard-lg: 12px 12px 0px 0px hsl(48 100% 98%);
+    /* Subtle dark shadows for dark mode */
+    --shadow-hard-sm: 3px 3px 0px 0px hsl(215 25% 5%);
+    --shadow-hard: 5px 5px 0px 0px hsl(215 25% 5%);
+    --shadow-hard-md: 8px 8px 0px 0px hsl(215 25% 5%);
+    --shadow-hard-lg: 12px 12px 0px 0px hsl(215 25% 5%);
     
-    --shadow-primary: 5px 5px 0px 0px hsl(263 70% 66%);
-    --shadow-secondary: 5px 5px 0px 0px hsl(330 85% 70%);
-    --shadow-tertiary: 5px 5px 0px 0px hsl(43 96% 56%);
-    --shadow-quaternary: 5px 5px 0px 0px hsl(160 62% 52%);
+    --shadow-primary: 5px 5px 0px 0px hsl(263 70% 40%);
+    --shadow-secondary: 5px 5px 0px 0px hsl(330 85% 45%);
+    --shadow-tertiary: 5px 5px 0px 0px hsl(43 96% 35%);
+    --shadow-quaternary: 5px 5px 0px 0px hsl(160 62% 30%);
   }
 }
 
