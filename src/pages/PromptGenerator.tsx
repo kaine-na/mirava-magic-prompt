@@ -7,6 +7,7 @@ import { MainLayout } from "@/components/layout/MainLayout";
 import { DecorativeShapes } from "@/components/prompt/DecorativeShapes";
 import { PromptHistoryPanel } from "@/components/prompt/PromptHistoryPanel";
 import { useApiKey } from "@/hooks/useApiKey";
+import { useCustomModels } from "@/hooks/useCustomModels";
 import { usePromptHistory, PromptHistoryItem } from "@/hooks/usePromptHistory";
 import { generatePrompt } from "@/lib/generatePrompt";
 import { useToast } from "@/hooks/use-toast";
@@ -36,9 +37,15 @@ export default function PromptGenerator() {
   const [isSaved, setIsSaved] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  const { apiKey, provider, model, baseUrl, hasApiKey } = useApiKey();
+  const { apiKey, provider, model, selectedCustomModelId, hasApiKey } = useApiKey();
+  const { customModels } = useCustomModels();
   const { history, addToHistory, removeFromHistory, toggleFavorite, clearHistory } = usePromptHistory();
   const { toast } = useToast();
+
+  // Get custom model config if using custom provider
+  const selectedCustomModel = provider === "custom" 
+    ? customModels.find(m => m.id === selectedCustomModelId) 
+    : undefined;
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -103,10 +110,10 @@ export default function PromptGenerator() {
       const result = await generatePrompt({
         apiKey,
         provider,
-        model,
+        model: provider === "custom" ? selectedCustomModel?.modelId || "" : model,
         promptType,
         userInput,
-        baseUrl,
+        baseUrl: selectedCustomModel?.baseUrl,
       });
       setGeneratedPrompt(result);
       

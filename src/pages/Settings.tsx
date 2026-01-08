@@ -1,12 +1,18 @@
 import { useState, useEffect } from "react";
-import { Settings as SettingsIcon, Key, Eye, EyeOff, Trash2, Check, Sparkles, RefreshCw, Bot, Link2 } from "lucide-react";
+import { 
+  Settings as SettingsIcon, Key, Eye, EyeOff, Trash2, Check, Sparkles, 
+  RefreshCw, Bot, Plus, X, Edit2, Save
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { DecorativeShapes } from "@/components/prompt/DecorativeShapes";
 import { useApiKey, ApiProvider } from "@/hooks/useApiKey";
+import { useCustomModels, CustomModel } from "@/hooks/useCustomModels";
 import { useModels } from "@/hooks/useModels";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -43,36 +49,40 @@ const providers = [
   {
     id: "custom" as ApiProvider,
     name: "Custom",
-    description: "OpenAI-compatible API",
+    description: "Your own models",
     color: "bg-muted",
     url: "",
   },
 ];
 
 export default function Settings() {
-  const { apiKey, provider, model, baseUrl, setApiKey, setProvider, setModel, setBaseUrl, clearApiKey, hasApiKey } = useApiKey();
+  const { 
+    apiKey, provider, model, selectedCustomModelId,
+    setApiKey, setProvider, setModel, setSelectedCustomModelId, 
+    clearApiKey, hasApiKey 
+  } = useApiKey();
+  const { customModels, addCustomModel, removeCustomModel } = useCustomModels();
   const { models, isLoading: isLoadingModels, error: modelsError, fetchModels } = useModels();
+  
   const [inputKey, setInputKey] = useState(apiKey);
-  const [inputBaseUrl, setInputBaseUrl] = useState(baseUrl);
   const [showKey, setShowKey] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [isAddModelOpen, setIsAddModelOpen] = useState(false);
+  const [newModel, setNewModel] = useState({ name: "", baseUrl: "", modelId: "" });
+  
   const { toast } = useToast();
 
-  // Fetch models when API key is saved
+  // Fetch models when API key is saved (for non-custom providers)
   useEffect(() => {
-    if (hasApiKey && (provider !== "custom" || baseUrl)) {
-      fetchModels(provider, apiKey, baseUrl);
+    if (hasApiKey && provider !== "custom") {
+      fetchModels(provider, apiKey);
     }
-  }, [provider, hasApiKey, baseUrl]);
+  }, [provider, hasApiKey]);
 
   // Sync input states when values change
   useEffect(() => {
     setInputKey(apiKey);
   }, [apiKey]);
-
-  useEffect(() => {
-    setInputBaseUrl(baseUrl);
-  }, [baseUrl]);
 
   const handleSave = () => {
     if (!inputKey.trim()) {
@@ -84,29 +94,18 @@ export default function Settings() {
       return;
     }
 
-    if (provider === "custom" && !inputBaseUrl.trim()) {
-      toast({
-        title: "Error",
-        description: "Please enter a base URL for custom provider",
-        variant: "destructive",
-      });
-      return;
-    }
-
     setApiKey(inputKey);
-    if (provider === "custom") {
-      setBaseUrl(inputBaseUrl);
-    }
-    
     setSaved(true);
     toast({
       title: "✨ Saved!",
-      description: "Your settings have been saved",
+      description: "Your API key has been saved",
     });
     setTimeout(() => setSaved(false), 2000);
     
-    // Fetch models with the new key
-    fetchModels(provider, inputKey, provider === "custom" ? inputBaseUrl : undefined);
+    // Fetch models with the new key (for non-custom providers)
+    if (provider !== "custom") {
+      fetchModels(provider, inputKey);
+    }
   };
 
   const handleClear = () => {
@@ -119,8 +118,8 @@ export default function Settings() {
   };
 
   const handleRefreshModels = () => {
-    if (hasApiKey) {
-      fetchModels(provider, apiKey, provider === "custom" ? baseUrl : undefined);
+    if (hasApiKey && provider !== "custom") {
+      fetchModels(provider, apiKey);
       toast({
         title: "Refreshing models...",
         description: "Fetching available models from API",
@@ -128,7 +127,56 @@ export default function Settings() {
     }
   };
 
-  const currentProvider = providers.find(p => p.id === provider);
+  const handleAddCustomModel = () => {
+    if (!newModel.name.trim() || !newModel.baseUrl.trim() || !newModel.modelId.trim()) {
+      toast({
+        title: "Error",
+        description: "Please fill all fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Basic URL validation
+    try {
+      new URL(newModel.baseUrl);
+    } catch {
+      toast({
+        title: "Error",
+        description: "Please enter a valid URL",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const added = addCustomModel({
+      name: newModel.name.trim().slice(0, 100),
+      baseUrl: newModel.baseUrl.trim(),
+      modelId: newModel.modelId.trim().slice(0, 200),
+    });
+    
+    setSelectedCustomModelId(added.id);
+    setNewModel({ name: "", baseUrl: "", modelId: "" });
+    setIsAddModelOpen(false);
+    
+    toast({
+      title: "✨ Model Added!",
+      description: `${added.name} has been saved`,
+    });
+  };
+
+  const handleDeleteCustomModel = (id: string) => {
+    removeCustomModel(id);
+    if (selectedCustomModelId === id) {
+      setSelectedCustomModelId("");
+    }
+    toast({
+      title: "Deleted",
+      description: "Custom model has been removed",
+    });
+  };
+
+  const selectedCustomModel = customModels.find(m => m.id === selectedCustomModelId);
 
   return (
     <MainLayout>
@@ -203,26 +251,133 @@ export default function Settings() {
           </CardContent>
         </Card>
 
-        {/* Custom Base URL (only for custom provider) */}
+        {/* Custom Models Section (only for custom provider) */}
         {provider === "custom" && (
           <Card className="mb-6 hover:translate-x-0 hover:translate-y-0 hover:shadow-hard">
             <CardHeader className="pb-3 sm:pb-4">
-              <CardTitle className="font-heading text-base sm:text-lg flex items-center gap-2">
-                <Link2 className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={2.5} />
-                API Base URL
-              </CardTitle>
-              <CardDescription className="text-xs sm:text-sm">
-                Enter your OpenAI-compatible API endpoint (e.g., https://api.example.com/v1)
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="font-heading text-base sm:text-lg flex items-center gap-2">
+                    <Bot className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={2.5} />
+                    Custom Models
+                  </CardTitle>
+                  <CardDescription className="text-xs sm:text-sm">
+                    Add your own OpenAI-compatible API endpoints
+                  </CardDescription>
+                </div>
+                <Dialog open={isAddModelOpen} onOpenChange={setIsAddModelOpen}>
+                  <DialogTrigger asChild>
+                    <Button size="sm" className="gap-1.5">
+                      <Plus className="h-4 w-4" />
+                      <span className="hidden sm:inline">Add Model</span>
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle className="font-heading">Add Custom Model</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 pt-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="model-name">Display Name</Label>
+                        <Input
+                          id="model-name"
+                          placeholder="e.g., My Local LLM"
+                          value={newModel.name}
+                          onChange={(e) => setNewModel({ ...newModel, name: e.target.value })}
+                          maxLength={100}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="base-url">Base URL</Label>
+                        <Input
+                          id="base-url"
+                          type="url"
+                          placeholder="https://api.example.com/v1"
+                          value={newModel.baseUrl}
+                          onChange={(e) => setNewModel({ ...newModel, baseUrl: e.target.value })}
+                        />
+                        <p className="text-[10px] text-muted-foreground">
+                          OpenAI-compatible endpoint (will call /chat/completions)
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="model-id">Model ID</Label>
+                        <Input
+                          id="model-id"
+                          placeholder="e.g., gpt-4, llama-3.1-8b"
+                          value={newModel.modelId}
+                          onChange={(e) => setNewModel({ ...newModel, modelId: e.target.value })}
+                          maxLength={200}
+                        />
+                      </div>
+                      <Button onClick={handleAddCustomModel} className="w-full gap-2">
+                        <Save className="h-4 w-4" />
+                        Save Model
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
             </CardHeader>
-            <CardContent className="pt-0">
-              <Input
-                type="url"
-                placeholder="https://api.example.com/v1"
-                value={inputBaseUrl}
-                onChange={(e) => setInputBaseUrl(e.target.value)}
-                className="text-sm sm:text-base"
-              />
+            <CardContent className="pt-0 space-y-3">
+              {customModels.length === 0 ? (
+                <div className="text-center py-6 text-muted-foreground">
+                  <Bot className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">No custom models yet</p>
+                  <p className="text-xs">Click "Add Model" to get started</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {customModels.map((cm) => {
+                    const isSelected = selectedCustomModelId === cm.id;
+                    return (
+                      <div
+                        key={cm.id}
+                        className={cn(
+                          "flex items-center gap-3 p-3 rounded-xl border-2 transition-all cursor-pointer",
+                          isSelected
+                            ? "border-foreground bg-card shadow-hard-sm"
+                            : "border-border hover:border-foreground/50"
+                        )}
+                        onClick={() => setSelectedCustomModelId(cm.id)}
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-sm truncate">{cm.name}</p>
+                          <p className="text-[10px] text-muted-foreground truncate">{cm.modelId}</p>
+                          <p className="text-[10px] text-muted-foreground/70 truncate">{cm.baseUrl}</p>
+                        </div>
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          {isSelected && (
+                            <div className="w-5 h-5 bg-tertiary rounded-full border-2 border-foreground flex items-center justify-center">
+                              <Check className="h-2.5 w-2.5" strokeWidth={3} />
+                            </div>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteCustomModel(cm.id);
+                            }}
+                          >
+                            <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {selectedCustomModel && (
+                <div className="flex items-center gap-2 p-2.5 sm:p-3 rounded-xl border-2 bg-tertiary/10 border-tertiary">
+                  <Bot className="h-4 w-4 text-tertiary flex-shrink-0" />
+                  <span className="text-xs sm:text-sm font-medium truncate">
+                    Using: {selectedCustomModel.name}
+                  </span>
+                </div>
+              )}
             </CardContent>
           </Card>
         )}
@@ -294,8 +449,8 @@ export default function Settings() {
           </CardContent>
         </Card>
 
-        {/* Model Selection */}
-        {hasApiKey && (provider !== "custom" || baseUrl) && (
+        {/* Model Selection (for non-custom providers) */}
+        {hasApiKey && provider !== "custom" && (
           <Card className="mb-6 hover:translate-x-0 hover:translate-y-0 hover:shadow-hard">
             <CardHeader className="pb-3 sm:pb-4">
               <CardTitle className="font-heading text-base sm:text-lg flex items-center gap-2">
