@@ -77,24 +77,47 @@ function SidebarContent({
         {open ? <Logo /> : <LogoIcon />}
         
         {/* Prompt Types */}
-        <div className="mt-6 flex flex-col gap-1">
+        <motion.div 
+          className="mt-6 flex flex-col gap-1"
+          initial="hidden"
+          animate="visible"
+          variants={{
+            hidden: {},
+            visible: {
+              transition: {
+                staggerChildren: 0.08,
+                delayChildren: 0.1,
+              }
+            }
+          }}
+        >
           <motion.span
-            animate={{
-              opacity: open ? 1 : 0,
-              height: open ? "auto" : 0,
+            variants={{
+              hidden: { opacity: 0, y: -10 },
+              visible: { opacity: open ? 1 : 0, y: 0, height: open ? "auto" : 0 }
             }}
+            transition={{ type: "spring", stiffness: 300, damping: 24 }}
             className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-1 mb-2 overflow-hidden"
           >
             Generative AI
           </motion.span>
           
           <TooltipProvider delayDuration={0}>
-            {promptTypes.map((item) => {
+            {promptTypes.map((item, idx) => {
               const isActive = selectedPromptType === item.id;
               return (
                 <Tooltip key={item.id}>
                   <TooltipTrigger asChild>
-                    <button
+                    <motion.button
+                      variants={{
+                        hidden: { opacity: 0, x: -20, scale: 0.8 },
+                        visible: { opacity: 1, x: 0, scale: 1 }
+                      }}
+                      transition={{
+                        type: "spring",
+                        stiffness: 400,
+                        damping: 20,
+                      }}
                       onClick={() => onSelectPromptType(item.id)}
                       className={cn(
                         "flex items-center gap-2.5 py-2 px-1 rounded-lg transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] group/item",
@@ -144,7 +167,7 @@ function SidebarContent({
                       >
                         {item.title}
                       </motion.span>
-                    </button>
+                    </motion.button>
                   </TooltipTrigger>
                   {!open && (
                     <TooltipContent side="right" className="font-semibold">
@@ -213,7 +236,7 @@ function SidebarContent({
               )}
             </Tooltip>
           </TooltipProvider>
-        </div>
+        </motion.div>
       </div>
 
       {/* Footer */}
