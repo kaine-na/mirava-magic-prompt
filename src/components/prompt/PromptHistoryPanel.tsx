@@ -1,0 +1,249 @@
+import { useState } from "react";
+import { Clock, Star, Trash2, Copy, Check, ChevronDown, ChevronUp, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PromptHistoryItem } from "@/hooks/usePromptHistory";
+import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
+
+const promptTypeLabels: Record<string, string> = {
+  image: "Image",
+  video: "Video",
+  social: "Social",
+  "3d": "3D Model",
+  chat: "Chat",
+  code: "Code",
+  music: "Music",
+  writing: "Writing",
+  marketing: "Marketing",
+  email: "Email",
+  art: "Art Style",
+  custom: "Custom",
+};
+
+const promptTypeColors: Record<string, string> = {
+  image: "bg-primary",
+  video: "bg-secondary",
+  social: "bg-tertiary",
+  "3d": "bg-quaternary",
+  chat: "bg-primary",
+  code: "bg-quaternary",
+  music: "bg-tertiary",
+  writing: "bg-primary",
+  marketing: "bg-secondary",
+  email: "bg-tertiary",
+  art: "bg-quaternary",
+  custom: "bg-secondary",
+};
+
+interface PromptHistoryPanelProps {
+  history: PromptHistoryItem[];
+  onRemove: (id: string) => void;
+  onToggleFavorite: (id: string) => void;
+  onClear: () => void;
+  onUsePrompt: (item: PromptHistoryItem) => void;
+}
+
+export function PromptHistoryPanel({
+  history,
+  onRemove,
+  onToggleFavorite,
+  onClear,
+  onUsePrompt,
+}: PromptHistoryPanelProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+  const { toast } = useToast();
+
+  const filteredHistory = showFavoritesOnly
+    ? history.filter((item) => item.isFavorite)
+    : history;
+
+  const handleCopy = async (text: string, id: string) => {
+    await navigator.clipboard.writeText(text);
+    setCopiedId(id);
+    toast({
+      title: "Copied!",
+      description: "Prompt copied to clipboard",
+    });
+    setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const formatDate = (timestamp: number) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return "Just now";
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return date.toLocaleDateString();
+  };
+
+  if (history.length === 0) {
+    return null;
+  }
+
+  return (
+    <Card className="mt-6 animate-pop-in hover:translate-x-0 hover:translate-y-0 hover:shadow-hard">
+      <CardHeader className="cursor-pointer" onClick={() => setIsOpen(!isOpen)}>
+        <CardTitle className="font-heading text-lg flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Clock className="h-5 w-5" strokeWidth={2.5} />
+            Prompt History
+            <span className="text-sm font-normal text-muted-foreground">
+              ({history.length} prompts)
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            {isOpen ? (
+              <ChevronUp className="h-5 w-5" />
+            ) : (
+              <ChevronDown className="h-5 w-5" />
+            )}
+          </div>
+        </CardTitle>
+      </CardHeader>
+
+      {isOpen && (
+        <CardContent className="space-y-4">
+          {/* Filters */}
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex gap-2">
+              <Button
+                variant={showFavoritesOnly ? "default" : "outline"}
+                size="sm"
+                onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
+                className="gap-1"
+              >
+                <Star className={cn("h-4 w-4", showFavoritesOnly && "fill-current")} />
+                Favorites
+              </Button>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onClear}
+              className="gap-1 text-destructive hover:text-destructive"
+            >
+              <Trash2 className="h-4 w-4" />
+              Clear All
+            </Button>
+          </div>
+
+          {/* History List */}
+          <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
+            {filteredHistory.length === 0 ? (
+              <p className="text-center text-muted-foreground py-4">
+                No {showFavoritesOnly ? "favorites" : "history"} yet
+              </p>
+            ) : (
+              filteredHistory.map((item, index) => (
+                <div
+                  key={item.id}
+                  className={cn(
+                    "p-4 rounded-xl border-2 border-border bg-muted/50 transition-all animate-pop-in",
+                    expandedId === item.id && "border-primary shadow-primary"
+                  )}
+                  style={{ animationDelay: `${index * 30}ms` }}
+                >
+                  {/* Header */}
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span
+                        className={cn(
+                          "px-2 py-1 rounded-full text-xs font-semibold text-primary-foreground border-2 border-foreground",
+                          promptTypeColors[item.promptType]
+                        )}
+                      >
+                        {promptTypeLabels[item.promptType] || item.promptType}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {formatDate(item.createdAt)}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => onToggleFavorite(item.id)}
+                        className="p-1.5 rounded-lg hover:bg-accent transition-colors"
+                      >
+                        <Star
+                          className={cn(
+                            "h-4 w-4",
+                            item.isFavorite
+                              ? "fill-tertiary text-tertiary"
+                              : "text-muted-foreground"
+                          )}
+                        />
+                      </button>
+                      <button
+                        onClick={() => onRemove(item.id)}
+                        className="p-1.5 rounded-lg hover:bg-destructive/10 transition-colors text-muted-foreground hover:text-destructive"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* User Input Preview */}
+                  <p className="text-sm font-medium mb-2 line-clamp-2">{item.userInput}</p>
+
+                  {/* Expand/Collapse */}
+                  <button
+                    onClick={() => setExpandedId(expandedId === item.id ? null : item.id)}
+                    className="text-xs text-primary font-semibold hover:underline"
+                  >
+                    {expandedId === item.id ? "Show less" : "Show prompt →"}
+                  </button>
+
+                  {/* Expanded Content */}
+                  {expandedId === item.id && (
+                    <div className="mt-3 pt-3 border-t border-border space-y-3 animate-pop-in">
+                      <div className="bg-card rounded-lg p-3 border-2 border-border">
+                        <p className="text-sm whitespace-pre-wrap">{item.generatedPrompt}</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleCopy(item.generatedPrompt, item.id)}
+                          className="gap-1"
+                        >
+                          {copiedId === item.id ? (
+                            <>
+                              <Check className="h-4 w-4" />
+                              Copied!
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="h-4 w-4" />
+                              Copy
+                            </>
+                          )}
+                        </Button>
+                        <Button
+                          variant="tertiary"
+                          size="sm"
+                          onClick={() => onUsePrompt(item)}
+                          className="gap-1"
+                        >
+                          Use Again
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        </CardContent>
+      )}
+    </Card>
+  );
+}
