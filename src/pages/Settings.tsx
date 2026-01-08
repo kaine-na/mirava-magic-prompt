@@ -477,7 +477,6 @@ export default function Settings() {
                     placeholder="e.g. openai/gpt-4o, anthropic/claude-3.5-sonnet"
                     value={model}
                     onChange={(e) => setModel(e.target.value)}
-                    disabled={!currentApiKey}
                   />
                 ) : (
                   <div className="flex gap-2">
