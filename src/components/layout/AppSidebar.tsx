@@ -255,11 +255,11 @@ function MobileSidebar({
   return (
     <div className="md:hidden">
       <div className="fixed top-0 left-0 right-0 h-14 bg-sidebar border-b-2 border-foreground flex items-center justify-between px-4 z-40">
-        <Link to="/" className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-tertiary rounded-full border-2 border-foreground shadow-hard-sm flex items-center justify-center">
+        <Link to="/" className="flex items-center gap-2.5">
+          <div className="w-8 h-8 bg-tertiary rounded-full border-2 border-foreground shadow-hard-sm flex items-center justify-center flex-shrink-0">
             <Zap className="h-4 w-4 text-tertiary-foreground" strokeWidth={2.5} />
           </div>
-          <span className="font-heading font-bold">PromptGen</span>
+          <span className="font-heading font-bold leading-none">PromptGen</span>
         </Link>
         <button
           onClick={() => setIsOpen(!isOpen)}
