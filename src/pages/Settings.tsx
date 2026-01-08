@@ -472,29 +472,32 @@ export default function Settings() {
                   Model
                 </Label>
                 <div className="flex gap-2">
-                  <Select value={model} onValueChange={setModel} disabled={!currentApiKey}>
-                    <SelectTrigger className="flex-1">
-                      <SelectValue placeholder={
-                        !currentApiKey 
-                          ? "Enter API key first" 
-                          : isLoadingModels 
-                            ? "Loading models..." 
-                            : "Select a model"
-                      } />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-60">
-                      {models.map((m) => (
-                        <SelectItem key={m.id} value={m.id}>
-                          {m.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex-1 min-w-0">
+                    <Select value={model} onValueChange={setModel} disabled={!currentApiKey}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder={
+                          !currentApiKey 
+                            ? "Enter API key first" 
+                            : isLoadingModels 
+                              ? "Loading models..." 
+                              : "Select a model"
+                        } />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-60 max-w-[calc(100vw-4rem)]">
+                        {models.map((m) => (
+                          <SelectItem key={m.id} value={m.id} className="truncate">
+                            <span className="truncate">{m.name}</span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <Button 
                     variant="outline" 
                     size="icon" 
                     onClick={handleRefreshModels}
                     disabled={isLoadingModels || !currentApiKey}
+                    className="flex-shrink-0"
                   >
                     <RefreshCw className={cn("h-4 w-4", isLoadingModels && "animate-spin")} />
                   </Button>
