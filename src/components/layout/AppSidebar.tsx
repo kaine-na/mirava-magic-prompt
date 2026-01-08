@@ -4,7 +4,7 @@ import {
   Settings, Zap,
   Image, Video, Box, Music, Palette
 } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { 
   AnimatedSidebar, 
@@ -126,29 +126,47 @@ function SidebarContent({
                           : "hover:bg-muted/50"
                       )}
                     >
-                      <motion.div
-                        animate={{
-                          scale: open ? 1 : 0.95,
-                          rotate: 0,
-                        }}
-                        whileHover={{
-                          scale: 1.1,
-                          rotate: [0, 3, -3, 0],
-                          transition: { rotate: { duration: 0.4 } }
-                        }}
-                        whileTap={{ scale: 0.95 }}
-                        transition={{
-                          type: "spring",
-                          stiffness: 400,
-                          damping: 17,
-                        }}
-                        className={cn(
-                          "w-7 h-7 rounded-full border-2 border-foreground flex items-center justify-center flex-shrink-0",
-                          item.color
-                        )}
-                      >
-                        <item.icon className="h-3.5 w-3.5 text-primary-foreground" strokeWidth={2.5} />
-                      </motion.div>
+                      <div className="relative">
+                        <motion.div
+                          animate={{
+                            scale: open ? 1 : 0.95,
+                            rotate: 0,
+                          }}
+                          whileHover={{
+                            scale: 1.1,
+                            rotate: [0, 3, -3, 0],
+                            transition: { rotate: { duration: 0.4 } }
+                          }}
+                          whileTap={{ scale: 0.95 }}
+                          transition={{
+                            type: "spring",
+                            stiffness: 400,
+                            damping: 17,
+                          }}
+                          className={cn(
+                            "w-7 h-7 rounded-full border-2 border-foreground flex items-center justify-center flex-shrink-0",
+                            item.color
+                          )}
+                        >
+                          <item.icon className="h-3.5 w-3.5 text-primary-foreground" strokeWidth={2.5} />
+                        </motion.div>
+                        {/* Active indicator dot */}
+                        <AnimatePresence>
+                          {isActive && (
+                            <motion.div
+                              initial={{ scale: 0, opacity: 0 }}
+                              animate={{ scale: 1, opacity: 1 }}
+                              exit={{ scale: 0, opacity: 0 }}
+                              transition={{
+                                type: "spring",
+                                stiffness: 500,
+                                damping: 25,
+                              }}
+                              className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-secondary rounded-full border-2 border-foreground"
+                            />
+                          )}
+                        </AnimatePresence>
+                      </div>
                       <motion.span 
                         animate={{
                           display: open ? "inline-block" : "none",
