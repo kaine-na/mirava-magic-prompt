@@ -343,7 +343,11 @@ ${generatedPrompts.join('\n')}`;
               className="min-h-[120px] sm:min-h-[150px] text-sm sm:text-base"
             />
             <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
-              <span>{userInput.length} characters</span>
+              <div className="flex items-center gap-3">
+                <span>{userInput.length} characters</span>
+                <span>•</span>
+                <span>{userInput.split('\n').filter(line => line.trim()).length} idea{userInput.split('\n').filter(line => line.trim()).length !== 1 ? 's' : ''}</span>
+              </div>
               {userInput && (
                 <button
                   onClick={() => setUserInput("")}
