@@ -1,9 +1,10 @@
-import { ApiProvider } from "@/hooks/useApiKey";
+import { ApiProvider, providerEndpoints } from "@/hooks/useApiKey";
 import { getPromptTemplate } from "./promptTemplates";
 
 interface GenerateOptions {
   apiKey: string;
   provider: ApiProvider;
+  model: string;
   promptType: string;
   userInput: string;
 }
@@ -11,20 +12,22 @@ interface GenerateOptions {
 export async function generatePrompt({
   apiKey,
   provider,
+  model,
   promptType,
   userInput,
 }: GenerateOptions): Promise<string> {
   const systemPrompt = getPromptTemplate(promptType, userInput);
+  const endpoint = providerEndpoints[provider];
 
   if (provider === "openai") {
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    const response = await fetch(`${endpoint.base}/chat/completions`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini",
+        model: model || "gpt-4o-mini",
         messages: [
           { role: "system", content: "You are a helpful prompt engineering assistant." },
           { role: "user", content: systemPrompt },
@@ -42,34 +45,10 @@ export async function generatePrompt({
     return data.choices[0].message.content;
   }
 
-  if (provider === "anthropic") {
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-        "anthropic-dangerous-direct-browser-access": "true",
-      },
-      body: JSON.stringify({
-        model: "claude-3-haiku-20240307",
-        max_tokens: 1000,
-        messages: [{ role: "user", content: systemPrompt }],
-      }),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error?.message || "Anthropic API error");
-    }
-
-    const data = await response.json();
-    return data.content[0].text;
-  }
-
   if (provider === "gemini") {
+    const modelId = model || "gemini-1.5-flash";
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+      `${endpoint.base}/models/${modelId}:generateContent?key=${apiKey}`,
       {
         method: "POST",
         headers: {
@@ -88,6 +67,58 @@ export async function generatePrompt({
 
     const data = await response.json();
     return data.candidates[0].content.parts[0].text;
+  }
+
+  if (provider === "openrouter") {
+    const response = await fetch(`${endpoint.base}/chat/completions`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: model || "openai/gpt-4o-mini",
+        messages: [
+          { role: "system", content: "You are a helpful prompt engineering assistant." },
+          { role: "user", content: systemPrompt },
+        ],
+        max_tokens: 1000,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error?.message || "OpenRouter API error");
+    }
+
+    const data = await response.json();
+    return data.choices[0].message.content;
+  }
+
+  if (provider === "groq") {
+    const response = await fetch(`${endpoint.base}/chat/completions`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: model || "llama-3.3-70b-versatile",
+        messages: [
+          { role: "system", content: "You are a helpful prompt engineering assistant." },
+          { role: "user", content: systemPrompt },
+        ],
+        max_tokens: 1000,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error?.message || "Groq API error");
+    }
+
+    const data = await response.json();
+    return data.choices[0].message.content;
   }
 
   throw new Error("Invalid provider");
