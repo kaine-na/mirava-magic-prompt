@@ -7,6 +7,7 @@ export interface CustomModel {
   name: string;
   baseUrl: string;
   modelId: string;
+  apiKey: string;
 }
 
 export function useCustomModels() {

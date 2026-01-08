@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 
-const API_KEY_STORAGE_KEY = "promptgen_api_key";
+const API_KEYS_STORAGE_KEY = "promptgen_api_keys";
 const API_PROVIDER_STORAGE_KEY = "promptgen_api_provider";
 const API_MODEL_STORAGE_KEY = "promptgen_api_model";
 const SELECTED_CUSTOM_MODEL_KEY = "promptgen_selected_custom_model";
@@ -26,27 +26,41 @@ export const providerEndpoints: Record<Exclude<ApiProvider, "custom">, { base: s
   },
 };
 
+// Store API keys per provider
+type ApiKeys = Partial<Record<Exclude<ApiProvider, "custom">, string>>;
+
 export function useApiKey() {
-  const [apiKey, setApiKeyState] = useState<string>("");
+  const [apiKeys, setApiKeysState] = useState<ApiKeys>({});
   const [provider, setProviderState] = useState<ApiProvider>("openai");
   const [model, setModelState] = useState<string>("");
   const [selectedCustomModelId, setSelectedCustomModelIdState] = useState<string>("");
 
   useEffect(() => {
-    const storedKey = localStorage.getItem(API_KEY_STORAGE_KEY);
+    const storedKeys = localStorage.getItem(API_KEYS_STORAGE_KEY);
     const storedProvider = localStorage.getItem(API_PROVIDER_STORAGE_KEY) as ApiProvider;
     const storedModel = localStorage.getItem(API_MODEL_STORAGE_KEY);
     const storedCustomModelId = localStorage.getItem(SELECTED_CUSTOM_MODEL_KEY);
     
-    if (storedKey) setApiKeyState(storedKey);
+    if (storedKeys) {
+      try {
+        setApiKeysState(JSON.parse(storedKeys));
+      } catch {
+        setApiKeysState({});
+      }
+    }
     if (storedProvider) setProviderState(storedProvider);
     if (storedModel) setModelState(storedModel);
     if (storedCustomModelId) setSelectedCustomModelIdState(storedCustomModelId);
   }, []);
 
-  const setApiKey = (key: string) => {
-    setApiKeyState(key);
-    localStorage.setItem(API_KEY_STORAGE_KEY, key);
+  const setApiKeyForProvider = (prov: Exclude<ApiProvider, "custom">, key: string) => {
+    const updated = { ...apiKeys, [prov]: key };
+    setApiKeysState(updated);
+    localStorage.setItem(API_KEYS_STORAGE_KEY, JSON.stringify(updated));
+  };
+
+  const getApiKeyForProvider = (prov: Exclude<ApiProvider, "custom">) => {
+    return apiKeys[prov] || "";
   };
 
   const setProvider = (prov: ApiProvider) => {
@@ -69,25 +83,33 @@ export function useApiKey() {
     localStorage.setItem(SELECTED_CUSTOM_MODEL_KEY, id);
   };
 
-  const clearApiKey = () => {
-    setApiKeyState("");
-    setModelState("");
-    localStorage.removeItem(API_KEY_STORAGE_KEY);
-    localStorage.removeItem(API_MODEL_STORAGE_KEY);
+  const clearApiKeyForProvider = (prov: Exclude<ApiProvider, "custom">) => {
+    const updated = { ...apiKeys };
+    delete updated[prov];
+    setApiKeysState(updated);
+    localStorage.setItem(API_KEYS_STORAGE_KEY, JSON.stringify(updated));
+    if (provider === prov) {
+      setModelState("");
+      localStorage.removeItem(API_MODEL_STORAGE_KEY);
+    }
   };
 
-  const hasApiKey = apiKey.length > 0;
+  // Current provider's API key (for non-custom)
+  const currentApiKey = provider !== "custom" ? (apiKeys[provider] || "") : "";
+  const hasApiKey = provider === "custom" ? true : currentApiKey.length > 0;
 
   return {
-    apiKey,
+    apiKeys,
     provider,
     model,
     selectedCustomModelId,
-    setApiKey,
+    currentApiKey,
+    setApiKeyForProvider,
+    getApiKeyForProvider,
     setProvider,
     setModel,
     setSelectedCustomModelId,
-    clearApiKey,
+    clearApiKeyForProvider,
     hasApiKey,
   };
 }

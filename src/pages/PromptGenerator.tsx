@@ -37,7 +37,7 @@ export default function PromptGenerator() {
   const [isSaved, setIsSaved] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  const { apiKey, provider, model, selectedCustomModelId, hasApiKey } = useApiKey();
+  const { provider, model, selectedCustomModelId, currentApiKey, hasApiKey } = useApiKey();
   const { customModels } = useCustomModels();
   const { history, addToHistory, removeFromHistory, toggleFavorite, clearHistory } = usePromptHistory();
   const { toast } = useToast();
@@ -46,6 +46,11 @@ export default function PromptGenerator() {
   const selectedCustomModel = provider === "custom" 
     ? customModels.find(m => m.id === selectedCustomModelId) 
     : undefined;
+
+  // Determine API key to use
+  const apiKeyToUse = provider === "custom" 
+    ? selectedCustomModel?.apiKey || "" 
+    : currentApiKey;
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -95,10 +100,17 @@ export default function PromptGenerator() {
       return;
     }
 
-    if (!hasApiKey) {
+    // Check if we have a valid API key
+    const hasValidKey = provider === "custom" 
+      ? !!selectedCustomModel?.apiKey 
+      : !!apiKeyToUse;
+
+    if (!hasValidKey) {
       toast({
-        title: "API Key Required",
-        description: "Please add your API key in Settings",
+        title: "Model Not Configured",
+        description: provider === "custom" 
+          ? "Please select a custom model in Settings" 
+          : "Please set up your AI model in Settings",
         variant: "destructive",
       });
       return;
@@ -108,7 +120,7 @@ export default function PromptGenerator() {
     setIsSaved(false);
     try {
       const result = await generatePrompt({
-        apiKey,
+        apiKey: apiKeyToUse,
         provider,
         model: provider === "custom" ? selectedCustomModel?.modelId || "" : model,
         promptType,

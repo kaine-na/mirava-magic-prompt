@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { 
   Settings as SettingsIcon, Key, Eye, EyeOff, Trash2, Check, Sparkles, 
-  RefreshCw, Bot, Plus, X, Edit2, Save
+  RefreshCw, Bot, Plus, Save
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { DecorativeShapes } from "@/components/prompt/DecorativeShapes";
 import { useApiKey, ApiProvider } from "@/hooks/useApiKey";
-import { useCustomModels, CustomModel } from "@/hooks/useCustomModels";
+import { useCustomModels } from "@/hooks/useCustomModels";
 import { useModels } from "@/hooks/useModels";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -57,34 +57,37 @@ const providers = [
 
 export default function Settings() {
   const { 
-    apiKey, provider, model, selectedCustomModelId,
-    setApiKey, setProvider, setModel, setSelectedCustomModelId, 
-    clearApiKey, hasApiKey 
+    provider, model, selectedCustomModelId, currentApiKey,
+    setApiKeyForProvider, getApiKeyForProvider, setProvider, setModel, 
+    setSelectedCustomModelId, clearApiKeyForProvider, hasApiKey 
   } = useApiKey();
   const { customModels, addCustomModel, removeCustomModel } = useCustomModels();
   const { models, isLoading: isLoadingModels, error: modelsError, fetchModels } = useModels();
   
-  const [inputKey, setInputKey] = useState(apiKey);
+  const [inputKey, setInputKey] = useState("");
   const [showKey, setShowKey] = useState(false);
   const [saved, setSaved] = useState(false);
   const [isAddModelOpen, setIsAddModelOpen] = useState(false);
-  const [newModel, setNewModel] = useState({ name: "", baseUrl: "", modelId: "" });
+  const [showNewModelKey, setShowNewModelKey] = useState(false);
+  const [newModel, setNewModel] = useState({ name: "", baseUrl: "", modelId: "", apiKey: "" });
   
   const { toast } = useToast();
 
-  // Fetch models when API key is saved (for non-custom providers)
+  // Sync input key when provider changes
   useEffect(() => {
-    if (hasApiKey && provider !== "custom") {
-      fetchModels(provider, apiKey);
+    if (provider !== "custom") {
+      setInputKey(getApiKeyForProvider(provider));
     }
-  }, [provider, hasApiKey]);
+  }, [provider]);
 
-  // Sync input states when values change
+  // Fetch models when provider has API key
   useEffect(() => {
-    setInputKey(apiKey);
-  }, [apiKey]);
+    if (provider !== "custom" && currentApiKey) {
+      fetchModels(provider, currentApiKey);
+    }
+  }, [provider, currentApiKey]);
 
-  const handleSave = () => {
+  const handleSetModel = () => {
     if (!inputKey.trim()) {
       toast({
         title: "Error",
@@ -94,32 +97,40 @@ export default function Settings() {
       return;
     }
 
-    setApiKey(inputKey);
+    if (!model) {
+      // Save key first, then user can select model
+      setApiKeyForProvider(provider as Exclude<ApiProvider, "custom">, inputKey);
+      setSaved(true);
+      toast({
+        title: "✨ API Key Saved!",
+        description: "Now select a model from the list",
+      });
+      setTimeout(() => setSaved(false), 2000);
+      fetchModels(provider as Exclude<ApiProvider, "custom">, inputKey);
+      return;
+    }
+
+    setApiKeyForProvider(provider as Exclude<ApiProvider, "custom">, inputKey);
     setSaved(true);
     toast({
-      title: "✨ Saved!",
-      description: "Your API key has been saved",
+      title: "✨ Model Set!",
+      description: `Using ${model} with ${providers.find(p => p.id === provider)?.name}`,
     });
     setTimeout(() => setSaved(false), 2000);
-    
-    // Fetch models with the new key (for non-custom providers)
-    if (provider !== "custom") {
-      fetchModels(provider, inputKey);
-    }
   };
 
   const handleClear = () => {
-    clearApiKey();
+    clearApiKeyForProvider(provider as Exclude<ApiProvider, "custom">);
     setInputKey("");
     toast({
       title: "Cleared",
-      description: "Your API key has been removed",
+      description: "API key and model have been removed",
     });
   };
 
   const handleRefreshModels = () => {
-    if (hasApiKey && provider !== "custom") {
-      fetchModels(provider, apiKey);
+    if (currentApiKey && provider !== "custom") {
+      fetchModels(provider, currentApiKey);
       toast({
         title: "Refreshing models...",
         description: "Fetching available models from API",
@@ -128,10 +139,10 @@ export default function Settings() {
   };
 
   const handleAddCustomModel = () => {
-    if (!newModel.name.trim() || !newModel.baseUrl.trim() || !newModel.modelId.trim()) {
+    if (!newModel.name.trim() || !newModel.baseUrl.trim() || !newModel.modelId.trim() || !newModel.apiKey.trim()) {
       toast({
         title: "Error",
-        description: "Please fill all fields",
+        description: "Please fill all fields including API key",
         variant: "destructive",
       });
       return;
@@ -153,15 +164,17 @@ export default function Settings() {
       name: newModel.name.trim().slice(0, 100),
       baseUrl: newModel.baseUrl.trim(),
       modelId: newModel.modelId.trim().slice(0, 200),
+      apiKey: newModel.apiKey.trim(),
     });
     
     setSelectedCustomModelId(added.id);
-    setNewModel({ name: "", baseUrl: "", modelId: "" });
+    setNewModel({ name: "", baseUrl: "", modelId: "", apiKey: "" });
     setIsAddModelOpen(false);
+    setShowNewModelKey(false);
     
     toast({
       title: "✨ Model Added!",
-      description: `${added.name} has been saved`,
+      description: `${added.name} has been saved and selected`,
     });
   };
 
@@ -177,6 +190,7 @@ export default function Settings() {
   };
 
   const selectedCustomModel = customModels.find(m => m.id === selectedCustomModelId);
+  const currentProviderInfo = providers.find(p => p.id === provider);
 
   return (
     <MainLayout>
@@ -190,10 +204,10 @@ export default function Settings() {
             <span className="font-semibold text-xs sm:text-sm text-secondary-foreground">Settings</span>
           </div>
           <h1 className="font-heading text-3xl sm:text-4xl lg:text-5xl font-bold mb-2 sm:mb-3">
-            Configure Your <span className="text-secondary">Setup</span>
+            Configure Your <span className="text-secondary">AI Models</span>
           </h1>
           <p className="text-muted-foreground text-sm sm:text-base lg:text-lg max-w-xl mx-auto px-4">
-            Add your API key to start generating amazing prompts
+            Set up your AI providers with their own API keys
           </p>
         </div>
 
@@ -205,13 +219,14 @@ export default function Settings() {
               Select AI Provider
             </CardTitle>
             <CardDescription className="text-xs sm:text-sm">
-              All providers use OpenAI-compatible format
+              Each provider stores its own API key separately
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-0">
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
               {providers.map((prov) => {
                 const isSelected = provider === prov.id;
+                const hasKey = prov.id !== "custom" && getApiKeyForProvider(prov.id as Exclude<ApiProvider, "custom">);
                 return (
                   <button
                     key={prov.id}
@@ -239,6 +254,10 @@ export default function Settings() {
                         <p className="text-[9px] sm:text-[10px] text-muted-foreground truncate">{prov.description}</p>
                       </div>
                     </div>
+                    {/* Configured indicator */}
+                    {hasKey && (
+                      <div className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 w-2 h-2 sm:w-2.5 sm:h-2.5 bg-quaternary rounded-full" />
+                    )}
                     {isSelected && (
                       <div className="absolute -top-1.5 -right-1.5 sm:-top-2 sm:-right-2 w-5 h-5 sm:w-6 sm:h-6 bg-tertiary rounded-full border-2 border-foreground flex items-center justify-center">
                         <Check className="h-2.5 w-2.5 sm:h-3 sm:w-3" strokeWidth={3} />
@@ -262,10 +281,16 @@ export default function Settings() {
                     Custom Models
                   </CardTitle>
                   <CardDescription className="text-xs sm:text-sm">
-                    Add your own OpenAI-compatible API endpoints
+                    Each model has its own API key and endpoint
                   </CardDescription>
                 </div>
-                <Dialog open={isAddModelOpen} onOpenChange={setIsAddModelOpen}>
+                <Dialog open={isAddModelOpen} onOpenChange={(open) => {
+                  setIsAddModelOpen(open);
+                  if (!open) {
+                    setNewModel({ name: "", baseUrl: "", modelId: "", apiKey: "" });
+                    setShowNewModelKey(false);
+                  }
+                }}>
                   <DialogTrigger asChild>
                     <Button size="sm" className="gap-1.5">
                       <Plus className="h-4 w-4" />
@@ -310,6 +335,26 @@ export default function Settings() {
                           maxLength={200}
                         />
                       </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="api-key">API Key</Label>
+                        <div className="relative">
+                          <Input
+                            id="api-key"
+                            type={showNewModelKey ? "text" : "password"}
+                            placeholder="Enter API key for this model"
+                            value={newModel.apiKey}
+                            onChange={(e) => setNewModel({ ...newModel, apiKey: e.target.value })}
+                            className="pr-10"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowNewModelKey(!showNewModelKey)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                          >
+                            {showNewModelKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </button>
+                        </div>
+                      </div>
                       <Button onClick={handleAddCustomModel} className="w-full gap-2">
                         <Save className="h-4 w-4" />
                         Save Model
@@ -347,6 +392,7 @@ export default function Settings() {
                           <p className="text-[10px] text-muted-foreground/70 truncate">{cm.baseUrl}</p>
                         </div>
                         <div className="flex items-center gap-1 flex-shrink-0">
+                          <div className="w-2 h-2 bg-quaternary rounded-full" title="API key configured" />
                           {isSelected && (
                             <div className="w-5 h-5 bg-tertiary rounded-full border-2 border-foreground flex items-center justify-center">
                               <Check className="h-2.5 w-2.5" strokeWidth={3} />
@@ -374,7 +420,7 @@ export default function Settings() {
                 <div className="flex items-center gap-2 p-2.5 sm:p-3 rounded-xl border-2 bg-tertiary/10 border-tertiary">
                   <Bot className="h-4 w-4 text-tertiary flex-shrink-0" />
                   <span className="text-xs sm:text-sm font-medium truncate">
-                    Using: {selectedCustomModel.name}
+                    Active: {selectedCustomModel.name}
                   </span>
                 </div>
               )}
@@ -382,117 +428,110 @@ export default function Settings() {
           </Card>
         )}
 
-        {/* API Key Input */}
-        <Card className="mb-6 hover:translate-x-0 hover:translate-y-0 hover:shadow-hard">
-          <CardHeader className="pb-3 sm:pb-4">
-            <CardTitle className="font-heading text-base sm:text-lg flex items-center gap-2">
-              <Key className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={2.5} />
-              API Key
-            </CardTitle>
-            <CardDescription className="text-xs sm:text-sm">
-              Stored locally in your browser, never sent to our servers
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pt-0 space-y-4">
-            <div className="relative">
-              <Input
-                type={showKey ? "text" : "password"}
-                placeholder="Enter your API key..."
-                value={inputKey}
-                onChange={(e) => setInputKey(e.target.value)}
-                className="pr-12 text-sm sm:text-base"
-              />
-              <button
-                type="button"
-                onClick={() => setShowKey(!showKey)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-              >
-                {showKey ? <EyeOff className="h-4 w-4 sm:h-5 sm:w-5" /> : <Eye className="h-4 w-4 sm:h-5 sm:w-5" />}
-              </button>
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-              <Button onClick={handleSave} className="flex-1 gap-2">
-                {saved ? (
-                  <>
-                    <Check className="h-4 w-4 sm:h-5 sm:w-5" />
-                    <span className="text-sm sm:text-base">Saved!</span>
-                  </>
-                ) : (
-                  <>
-                    <Key className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={2.5} />
-                    <span className="text-sm sm:text-base">Save Key</span>
-                  </>
-                )}
-              </Button>
-              {hasApiKey && (
-                <Button variant="outline" onClick={handleClear} className="gap-2">
-                  <Trash2 className="h-4 w-4 sm:h-5 sm:w-5" />
-                  <span className="text-sm sm:text-base">Clear</span>
-                </Button>
-              )}
-            </div>
-
-            {/* Status indicator */}
-            <div className={cn(
-              "flex items-center gap-2 p-2.5 sm:p-3 rounded-xl border-2",
-              hasApiKey ? "bg-quaternary/10 border-quaternary" : "bg-muted border-border"
-            )}>
-              <div className={cn(
-                "w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full flex-shrink-0",
-                hasApiKey ? "bg-quaternary animate-pulse" : "bg-muted-foreground"
-              )} />
-              <span className="text-xs sm:text-sm font-medium">
-                {hasApiKey ? "API key configured and ready!" : "No API key configured"}
-              </span>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Model Selection (for non-custom providers) */}
-        {hasApiKey && provider !== "custom" && (
+        {/* API Key & Model Selection (for non-custom providers) */}
+        {provider !== "custom" && (
           <Card className="mb-6 hover:translate-x-0 hover:translate-y-0 hover:shadow-hard">
             <CardHeader className="pb-3 sm:pb-4">
               <CardTitle className="font-heading text-base sm:text-lg flex items-center gap-2">
                 <Bot className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={2.5} />
-                Select Model
+                {currentProviderInfo?.name} Configuration
               </CardTitle>
               <CardDescription className="text-xs sm:text-sm">
-                Choose the AI model for generating prompts
+                Enter API key and select model for {currentProviderInfo?.name}
               </CardDescription>
             </CardHeader>
-            <CardContent className="pt-0 space-y-3">
-              <div className="flex gap-2">
-                <Select value={model} onValueChange={setModel}>
-                  <SelectTrigger className="flex-1">
-                    <SelectValue placeholder={isLoadingModels ? "Loading models..." : "Select a model"} />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-60">
-                    {models.map((m) => (
-                      <SelectItem key={m.id} value={m.id}>
-                        {m.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button 
-                  variant="outline" 
-                  size="icon" 
-                  onClick={handleRefreshModels}
-                  disabled={isLoadingModels}
-                >
-                  <RefreshCw className={cn("h-4 w-4", isLoadingModels && "animate-spin")} />
-                </Button>
+            <CardContent className="pt-0 space-y-4">
+              {/* API Key Input */}
+              <div className="space-y-2">
+                <Label className="text-xs font-medium flex items-center gap-1.5">
+                  <Key className="h-3.5 w-3.5" />
+                  API Key
+                </Label>
+                <div className="relative">
+                  <Input
+                    type={showKey ? "text" : "password"}
+                    placeholder={`Enter your ${currentProviderInfo?.name} API key...`}
+                    value={inputKey}
+                    onChange={(e) => setInputKey(e.target.value)}
+                    className="pr-12 text-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowKey(!showKey)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
               </div>
 
-              {modelsError && (
-                <p className="text-xs text-destructive">{modelsError}</p>
-              )}
+              {/* Model Selection */}
+              <div className="space-y-2">
+                <Label className="text-xs font-medium flex items-center gap-1.5">
+                  <Bot className="h-3.5 w-3.5" />
+                  Model
+                </Label>
+                <div className="flex gap-2">
+                  <Select value={model} onValueChange={setModel} disabled={!currentApiKey}>
+                    <SelectTrigger className="flex-1">
+                      <SelectValue placeholder={
+                        !currentApiKey 
+                          ? "Enter API key first" 
+                          : isLoadingModels 
+                            ? "Loading models..." 
+                            : "Select a model"
+                      } />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-60">
+                      {models.map((m) => (
+                        <SelectItem key={m.id} value={m.id}>
+                          {m.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    onClick={handleRefreshModels}
+                    disabled={isLoadingModels || !currentApiKey}
+                  >
+                    <RefreshCw className={cn("h-4 w-4", isLoadingModels && "animate-spin")} />
+                  </Button>
+                </div>
+                {modelsError && (
+                  <p className="text-xs text-destructive">{modelsError}</p>
+                )}
+              </div>
 
-              {model && (
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+                <Button onClick={handleSetModel} className="flex-1 gap-2">
+                  {saved ? (
+                    <>
+                      <Check className="h-4 w-4 sm:h-5 sm:w-5" />
+                      <span className="text-sm sm:text-base">Saved!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Bot className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={2.5} />
+                      <span className="text-sm sm:text-base">Set Model AI</span>
+                    </>
+                  )}
+                </Button>
+                {currentApiKey && (
+                  <Button variant="outline" onClick={handleClear} className="gap-2">
+                    <Trash2 className="h-4 w-4 sm:h-5 sm:w-5" />
+                    <span className="text-sm sm:text-base">Clear</span>
+                  </Button>
+                )}
+              </div>
+
+              {/* Status indicator */}
+              {model && currentApiKey && (
                 <div className="flex items-center gap-2 p-2.5 sm:p-3 rounded-xl border-2 bg-tertiary/10 border-tertiary">
                   <Bot className="h-4 w-4 text-tertiary flex-shrink-0" />
-                  <span className="text-xs sm:text-sm font-medium truncate">Using: {model}</span>
+                  <span className="text-xs sm:text-sm font-medium truncate">Active: {model}</span>
                 </div>
               )}
             </CardContent>
