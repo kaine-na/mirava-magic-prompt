@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Sparkles, Copy, Check, AlertCircle, Loader2, Star, Upload, Layers } from "lucide-react";
+import { Sparkles, Copy, Check, AlertCircle, Loader2, Star, Upload, Layers, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,7 +9,7 @@ import { PromptHistoryPanel } from "@/components/prompt/PromptHistoryPanel";
 import { useApiKey } from "@/hooks/useApiKey";
 import { useCustomModels } from "@/hooks/useCustomModels";
 import { usePromptHistory, PromptHistoryItem } from "@/hooks/usePromptHistory";
-import { generatePromptBatch } from "@/lib/generatePrompt";
+import { generatePromptBatch, generatePrompt } from "@/lib/generatePrompt";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -29,6 +29,7 @@ export default function PromptGenerator() {
   const [generatedPrompts, setGeneratedPrompts] = useState<string[]>([]);
   const [batchSize, setBatchSize] = useState(3);
   const [isLoading, setIsLoading] = useState(false);
+  const [regeneratingIndex, setRegeneratingIndex] = useState<number | null>(null);
   const [progress, setProgress] = useState({ completed: 0, total: 0 });
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -170,6 +171,52 @@ export default function PromptGenerator() {
       title: "All Copied!",
       description: `${generatedPrompts.length} prompts copied to clipboard`,
     });
+  };
+
+  const handleRegenerate = async (index: number) => {
+    const hasValidKey = provider === "custom" 
+      ? !!selectedCustomModel?.apiKey 
+      : !!apiKeyToUse;
+
+    if (!hasValidKey) return;
+
+    setRegeneratingIndex(index);
+    
+    try {
+      const result = await generatePrompt({
+        apiKey: apiKeyToUse,
+        provider,
+        model: provider === "custom" ? selectedCustomModel?.modelId || "" : model,
+        promptType,
+        userInput,
+        baseUrl: selectedCustomModel?.baseUrl,
+      });
+      
+      setGeneratedPrompts(prev => {
+        const updated = [...prev];
+        updated[index] = result;
+        return updated;
+      });
+      
+      addToHistory({
+        promptType,
+        userInput,
+        generatedPrompt: result,
+      });
+      
+      toast({
+        title: "✨ Regenerated!",
+        description: `Prompt #${index + 1} has been regenerated`,
+      });
+    } catch (error) {
+      toast({
+        title: "Regeneration Failed",
+        description: error instanceof Error ? error.message : "Something went wrong",
+        variant: "destructive",
+      });
+    } finally {
+      setRegeneratingIndex(null);
+    }
   };
 
   const handleUsePrompt = (item: PromptHistoryItem) => {
@@ -369,30 +416,51 @@ export default function PromptGenerator() {
               {generatedPrompts.map((prompt, index) => (
                 <div 
                   key={index} 
-                  className="bg-muted rounded-xl p-3 sm:p-4 border-2 border-border relative group"
+                  className={cn(
+                    "bg-muted rounded-xl p-3 sm:p-4 border-2 border-border relative group transition-opacity",
+                    regeneratingIndex === index && "opacity-50"
+                  )}
                 >
                   <div className="flex items-start justify-between gap-2 mb-2">
                     <span className="px-2 py-0.5 bg-primary/10 text-primary rounded-full text-xs font-semibold border border-primary/20">
                       #{index + 1}
                     </span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleCopy(prompt, index)}
-                      className="h-7 px-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      {copiedIndex === index ? (
-                        <>
-                          <Check className="h-3.5 w-3.5 mr-1" />
-                          <span className="text-xs">Copied!</span>
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="h-3.5 w-3.5 mr-1" />
-                          <span className="text-xs">Copy</span>
-                        </>
-                      )}
-                    </Button>
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleRegenerate(index)}
+                        disabled={regeneratingIndex !== null}
+                        className="h-7 px-2"
+                      >
+                        {regeneratingIndex === index ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <>
+                            <RefreshCw className="h-3.5 w-3.5 mr-1" />
+                            <span className="text-xs">Regenerate</span>
+                          </>
+                        )}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleCopy(prompt, index)}
+                        className="h-7 px-2"
+                      >
+                        {copiedIndex === index ? (
+                          <>
+                            <Check className="h-3.5 w-3.5 mr-1" />
+                            <span className="text-xs">Copied!</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="h-3.5 w-3.5 mr-1" />
+                            <span className="text-xs">Copy</span>
+                          </>
+                        )}
+                      </Button>
+                    </div>
                   </div>
                   <p className="whitespace-pre-wrap text-xs sm:text-sm leading-relaxed">{prompt}</p>
                 </div>
