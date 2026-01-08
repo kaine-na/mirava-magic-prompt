@@ -238,7 +238,7 @@ export default function Settings() {
                         : "border-border bg-card/50 hover:border-foreground hover:shadow-hard-sm"
                     )}
                   >
-                    <div className="flex flex-col items-start gap-2">
+                    <div className="flex flex-col items-start gap-2 w-full overflow-hidden">
                       <div
                         className={cn(
                           "w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 border-foreground flex items-center justify-center flex-shrink-0",
@@ -249,9 +249,9 @@ export default function Settings() {
                           {prov.name.charAt(0)}
                         </span>
                       </div>
-                      <div className="min-w-0">
-                        <p className="font-semibold text-xs sm:text-sm truncate">{prov.name}</p>
-                        <p className="text-[9px] sm:text-[10px] text-muted-foreground truncate">{prov.description}</p>
+                      <div className="w-full min-w-0 overflow-hidden">
+                        <p className="font-semibold text-xs sm:text-sm truncate max-w-full">{prov.name}</p>
+                        <p className="text-[9px] sm:text-[10px] text-muted-foreground truncate max-w-full">{prov.description}</p>
                       </div>
                     </div>
                     {/* Configured indicator */}
