@@ -89,28 +89,49 @@ function SidebarContent({
                 key={item.id}
                 onClick={() => onSelectPromptType(item.id)}
                 className={cn(
-                  "flex items-center gap-2.5 py-2 px-1 rounded-lg transition-all duration-200 group/item",
+                  "flex items-center gap-2.5 py-2 px-1 rounded-lg transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] group/item",
                   isActive
                     ? "bg-muted"
                     : "hover:bg-muted/50"
                 )}
               >
-                <div
+                <motion.div
+                  animate={{
+                    scale: open ? 1 : 0.95,
+                    rotate: 0,
+                  }}
+                  whileHover={{
+                    scale: 1.1,
+                    rotate: [0, 3, -3, 0],
+                    transition: { rotate: { duration: 0.4 } }
+                  }}
+                  whileTap={{ scale: 0.95 }}
+                  transition={{
+                    type: "spring",
+                    stiffness: 400,
+                    damping: 17,
+                  }}
                   className={cn(
                     "w-7 h-7 rounded-full border-2 border-foreground flex items-center justify-center flex-shrink-0",
                     item.color
                   )}
                 >
                   <item.icon className="h-3.5 w-3.5 text-primary-foreground" strokeWidth={2.5} />
-                </div>
+                </motion.div>
                 <motion.span 
                   animate={{
                     display: open ? "inline-block" : "none",
                     opacity: open ? 1 : 0,
+                    x: open ? 0 : -10,
+                  }}
+                  transition={{
+                    type: "spring",
+                    stiffness: 300,
+                    damping: 20,
                   }}
                   className={cn(
-                    "text-sm whitespace-pre transition-all duration-150",
-                    isActive ? "font-semibold" : "font-medium group-hover/item:translate-x-1"
+                    "text-sm whitespace-pre",
+                    isActive ? "font-semibold" : "font-medium group-hover/item:translate-x-1 transition-transform duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
                   )}
                 >
                   {item.title}
@@ -132,15 +153,35 @@ function SidebarContent({
                 : "hover:bg-muted/50"
             )}
           >
-            <div className="w-7 h-7 rounded-full border-2 border-foreground bg-muted flex items-center justify-center flex-shrink-0">
+            <motion.div 
+              animate={{ scale: open ? 1 : 0.95 }}
+              whileHover={{
+                scale: 1.1,
+                rotate: [0, 3, -3, 0],
+                transition: { rotate: { duration: 0.4 } }
+              }}
+              whileTap={{ scale: 0.95 }}
+              transition={{
+                type: "spring",
+                stiffness: 400,
+                damping: 17,
+              }}
+              className="w-7 h-7 rounded-full border-2 border-foreground bg-muted flex items-center justify-center flex-shrink-0"
+            >
               <Settings className="h-3.5 w-3.5" strokeWidth={2.5} />
-            </div>
+            </motion.div>
             <motion.span
               animate={{
                 display: open ? "inline-block" : "none",
                 opacity: open ? 1 : 0,
+                x: open ? 0 : -10,
               }}
-              className="font-semibold text-sm whitespace-pre group-hover/item:translate-x-1 transition-transform duration-150"
+              transition={{
+                type: "spring",
+                stiffness: 300,
+                damping: 20,
+              }}
+              className="font-semibold text-sm whitespace-pre group-hover/item:translate-x-1 transition-transform duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
             >
               Settings
             </motion.span>
