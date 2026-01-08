@@ -63,7 +63,7 @@ interface AppSidebarProps {
 }
 
 export function AppSidebar({ selectedPromptType, onSelectPromptType }: AppSidebarProps) {
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState<string[]>(["Generative AI"]);
   const location = useLocation();
   const navigate = useNavigate();
@@ -90,9 +90,9 @@ export function AppSidebar({ selectedPromptType, onSelectPromptType }: AppSideba
     <>
       {/* Mobile toggle button */}
       <Button
-        variant="ghost"
+        variant="outline"
         size="icon"
-        className="fixed top-4 left-4 z-50 lg:hidden"
+        className="fixed top-4 left-4 z-50 lg:hidden bg-card shadow-hard-sm"
         onClick={() => setIsOpen(!isOpen)}
       >
         {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -101,7 +101,7 @@ export function AppSidebar({ selectedPromptType, onSelectPromptType }: AppSideba
       {/* Backdrop for mobile */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-foreground/20 z-30 lg:hidden"
+          className="fixed inset-0 bg-foreground/30 backdrop-blur-sm z-30 lg:hidden"
           onClick={() => setIsOpen(false)}
         />
       )}
@@ -109,89 +109,91 @@ export function AppSidebar({ selectedPromptType, onSelectPromptType }: AppSideba
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed lg:relative z-40 h-screen w-72 bg-card border-r-2 border-foreground transition-transform duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] overflow-hidden",
+          "fixed lg:sticky lg:top-0 z-40 h-screen w-64 lg:w-72 bg-card border-r-2 border-foreground transition-transform duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] flex flex-col",
           isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
       >
-        <div className="flex flex-col h-full p-4 overflow-y-auto">
+        {/* Scrollable content */}
+        <div className="flex-1 overflow-y-auto p-4">
           {/* Logo */}
-          <div className="flex items-center gap-3 mb-6 p-2 animate-pop-in">
-            <div className="relative">
+          <div className="flex items-center gap-3 mb-6 p-2">
+            <div className="relative flex-shrink-0">
               <div className="w-10 h-10 bg-tertiary rounded-full border-2 border-foreground shadow-hard-sm flex items-center justify-center">
                 <Zap className="h-5 w-5 text-tertiary-foreground" strokeWidth={2.5} />
               </div>
-              <div className="absolute -top-1 -right-1 w-3 h-3 bg-secondary rounded-full border-2 border-foreground animate-bounce" />
+              <div className="absolute -top-1 -right-1 w-3 h-3 bg-secondary rounded-full border-2 border-foreground" />
             </div>
-            <div>
-              <h1 className="font-heading font-bold text-lg">PromptGen</h1>
-              <p className="text-xs text-muted-foreground">AI Prompt Magic ✨</p>
+            <div className="min-w-0">
+              <h1 className="font-heading font-bold text-lg truncate">PromptGen</h1>
+              <p className="text-xs text-muted-foreground truncate">AI Prompt Magic ✨</p>
             </div>
           </div>
 
           {/* Prompt Categories */}
-          <div className="flex-1 space-y-2">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide px-2 mb-2">
+          <div className="space-y-1.5">
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-3 mb-2">
               Prompt Types
             </p>
             
-            {promptCategories.map((category, catIndex) => {
+            {promptCategories.map((category) => {
               const isExpanded = expandedCategories.includes(category.title);
               const hasActiveItem = category.items.some((item) => item.id === selectedPromptType);
               
               return (
-                <div key={category.title} className="animate-pop-in" style={{ animationDelay: `${catIndex * 50}ms` }}>
+                <div key={category.title}>
                   {/* Category Header */}
                   <button
                     onClick={() => toggleCategory(category.title)}
                     className={cn(
-                      "w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all duration-300",
+                      "w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl border-2 transition-all duration-200",
                       hasActiveItem
                         ? "border-foreground bg-muted shadow-hard-sm"
-                        : "border-transparent hover:border-border hover:bg-muted/50"
+                        : "border-transparent hover:bg-muted/50"
                     )}
                   >
                     <div
                       className={cn(
-                        "w-8 h-8 rounded-full border-2 border-foreground flex items-center justify-center",
+                        "w-7 h-7 rounded-full border-2 border-foreground flex items-center justify-center flex-shrink-0",
                         category.color
                       )}
                     >
-                      <category.icon className="h-4 w-4 text-primary-foreground" strokeWidth={2.5} />
+                      <category.icon className="h-3.5 w-3.5 text-primary-foreground" strokeWidth={2.5} />
                     </div>
-                    <span className="flex-1 text-left font-semibold text-sm">{category.title}</span>
-                    {isExpanded ? (
-                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                    ) : (
-                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                    )}
+                    <span className="flex-1 text-left font-semibold text-sm truncate">{category.title}</span>
+                    <div className="flex-shrink-0">
+                      {isExpanded ? (
+                        <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                      ) : (
+                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </div>
                   </button>
 
                   {/* Category Items */}
                   {isExpanded && (
-                    <div className="ml-4 mt-1 space-y-1 border-l-2 border-border pl-3">
-                      {category.items.map((item, itemIndex) => {
+                    <div className="ml-5 mt-1 space-y-0.5 border-l-2 border-border pl-3 py-1">
+                      {category.items.map((item) => {
                         const isActive = selectedPromptType === item.id;
                         return (
                           <button
                             key={item.id}
                             onClick={() => handleSelectPromptType(item.id)}
                             className={cn(
-                              "w-full flex items-center gap-2 p-2 rounded-lg transition-all duration-200 animate-pop-in",
+                              "w-full flex items-center gap-2 px-2.5 py-2 rounded-lg transition-all duration-200",
                               isActive
                                 ? "bg-card border-2 border-foreground shadow-hard-sm"
                                 : "hover:bg-muted border-2 border-transparent"
                             )}
-                            style={{ animationDelay: `${itemIndex * 30}ms` }}
                           >
                             <div
                               className={cn(
-                                "w-6 h-6 rounded-full border-2 border-foreground flex items-center justify-center",
+                                "w-5 h-5 rounded-full border-2 border-foreground flex items-center justify-center flex-shrink-0",
                                 item.color
                               )}
                             >
-                              <item.icon className="h-3 w-3 text-primary-foreground" strokeWidth={2.5} />
+                              <item.icon className="h-2.5 w-2.5 text-primary-foreground" strokeWidth={3} />
                             </div>
-                            <span className={cn("text-sm", isActive ? "font-semibold" : "font-medium")}>
+                            <span className={cn("text-sm truncate", isActive ? "font-semibold" : "font-medium")}>
                               {item.title}
                             </span>
                           </button>
@@ -204,32 +206,32 @@ export function AppSidebar({ selectedPromptType, onSelectPromptType }: AppSideba
             })}
 
             {/* Divider */}
-            <div className="my-4 border-t border-border" />
+            <div className="my-3 border-t border-border" />
 
             {/* Settings */}
             <NavLink
               to="/settings"
               onClick={() => setIsOpen(false)}
               className={cn(
-                "flex items-center gap-3 p-3 rounded-xl border-2 transition-all duration-300",
+                "flex items-center gap-2.5 px-3 py-2.5 rounded-xl border-2 transition-all duration-200",
                 location.pathname === "/settings"
                   ? "border-foreground bg-card shadow-hard-sm"
-                  : "border-transparent hover:border-border hover:bg-muted/50"
+                  : "border-transparent hover:bg-muted/50"
               )}
             >
-              <div className="w-8 h-8 rounded-full border-2 border-foreground bg-muted flex items-center justify-center">
-                <Settings className="h-4 w-4" strokeWidth={2.5} />
+              <div className="w-7 h-7 rounded-full border-2 border-foreground bg-muted flex items-center justify-center flex-shrink-0">
+                <Settings className="h-3.5 w-3.5" strokeWidth={2.5} />
               </div>
               <span className="font-semibold text-sm">Settings</span>
             </NavLink>
           </div>
+        </div>
 
-          {/* Footer */}
-          <div className="pt-4 border-t border-border mt-4">
-            <p className="text-xs text-muted-foreground text-center">
-              Made with 💜 for creators
-            </p>
-          </div>
+        {/* Fixed Footer */}
+        <div className="flex-shrink-0 p-4 border-t border-border bg-card">
+          <p className="text-xs text-muted-foreground text-center">
+            Made with 💜 for creators
+          </p>
         </div>
       </aside>
     </>
