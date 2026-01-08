@@ -21,7 +21,7 @@ const promptTypeLabels: Record<string, string> = {
   art: "Art Style",
 };
 
-const batchOptions = [1, 2, 3, 4, 5];
+const MAX_BATCH_SIZE = 10;
 
 export default function PromptGenerator() {
   const [promptType, setPromptType] = useState("image");
@@ -280,38 +280,29 @@ export default function PromptGenerator() {
               )}
             </div>
 
-            {/* Prompt Count Selector */}
-            <div className="mt-4 flex flex-col gap-3">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
-                <div className="flex items-center gap-2">
-                  <Layers className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm font-medium">Jumlah prompt per idea:</span>
-                </div>
-                <div className="flex gap-1">
-                  {batchOptions.map((size) => (
-                    <button
-                      key={size}
-                      onClick={() => setBatchSize(size)}
-                      className={cn(
-                        "w-8 h-8 rounded-lg border-2 text-sm font-bold transition-all",
-                        batchSize === size
-                          ? "bg-primary text-primary-foreground border-foreground shadow-hard-sm"
-                          : "bg-muted text-muted-foreground border-border hover:border-foreground"
-                      )}
-                    >
-                      {size}
-                    </button>
-                  ))}
-                </div>
+            {/* Prompt Count Input */}
+            <div className="mt-4 flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:justify-between">
+              <div className="flex items-center gap-2">
+                <Layers className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium">Jumlah prompt per idea:</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={MAX_BATCH_SIZE}
+                  value={batchSize}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value) || 1;
+                    setBatchSize(Math.min(Math.max(val, 1), MAX_BATCH_SIZE));
+                  }}
+                  className="w-16 h-8 px-2 text-center text-sm font-bold rounded-lg border-2 border-foreground bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+                <span className="text-xs text-muted-foreground">(max {MAX_BATCH_SIZE})</span>
               </div>
               
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-sm">
-                  <span className="text-muted-foreground">Total prompt:</span>
-                  <span className="px-2.5 py-1 bg-quaternary text-quaternary-foreground rounded-full border-2 border-foreground font-bold text-xs">
-                    {batchSize} prompt{batchSize > 1 ? 's' : ''}
-                  </span>
-                </div>
+              <div className="flex items-center gap-3">
+                <span className="px-2.5 py-1 bg-quaternary text-quaternary-foreground rounded-full border-2 border-foreground font-bold text-xs">
+                  Total: {batchSize} prompt{batchSize > 1 ? 's' : ''}
+                </span>
                 
                 <Button
                   onClick={handleGenerate}
