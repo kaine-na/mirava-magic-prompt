@@ -469,40 +469,50 @@ export default function Settings() {
               <div className="space-y-2">
                 <Label className="text-xs font-medium flex items-center gap-1.5">
                   <Bot className="h-3.5 w-3.5" />
-                  Model
+                  Model {provider === "openrouter" && <span className="text-muted-foreground">(Model ID)</span>}
                 </Label>
-                <div className="flex gap-2">
-                  <div className="flex-1 min-w-0">
-                    <Select value={model} onValueChange={setModel} disabled={!currentApiKey}>
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder={
-                          !currentApiKey 
-                            ? "Enter API key first" 
-                            : isLoadingModels 
-                              ? "Loading models..." 
-                              : "Select a model"
-                        } />
-                      </SelectTrigger>
-                      <SelectContent className="max-h-60 max-w-[calc(100vw-4rem)]">
-                        {models.map((m) => (
-                          <SelectItem key={m.id} value={m.id} className="truncate">
-                            <span className="truncate">{m.name}</span>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                {provider === "openrouter" ? (
+                  <Input
+                    type="text"
+                    placeholder="e.g. openai/gpt-4o, anthropic/claude-3.5-sonnet"
+                    value={model}
+                    onChange={(e) => setModel(e.target.value)}
+                    disabled={!currentApiKey}
+                  />
+                ) : (
+                  <div className="flex gap-2">
+                    <div className="flex-1 min-w-0">
+                      <Select value={model} onValueChange={setModel} disabled={!currentApiKey}>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder={
+                            !currentApiKey 
+                              ? "Enter API key first" 
+                              : isLoadingModels 
+                                ? "Loading models..." 
+                                : "Select a model"
+                          } />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-60 max-w-[calc(100vw-4rem)]">
+                          {models.map((m) => (
+                            <SelectItem key={m.id} value={m.id} className="truncate">
+                              <span className="truncate">{m.name}</span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      size="icon" 
+                      onClick={handleRefreshModels}
+                      disabled={isLoadingModels || !currentApiKey}
+                      className="flex-shrink-0"
+                    >
+                      <RefreshCw className={cn("h-4 w-4", isLoadingModels && "animate-spin")} />
+                    </Button>
                   </div>
-                  <Button 
-                    variant="outline" 
-                    size="icon" 
-                    onClick={handleRefreshModels}
-                    disabled={isLoadingModels || !currentApiKey}
-                    className="flex-shrink-0"
-                  >
-                    <RefreshCw className={cn("h-4 w-4", isLoadingModels && "animate-spin")} />
-                  </Button>
-                </div>
-                {modelsError && (
+                )}
+                {modelsError && provider !== "openrouter" && (
                   <p className="text-xs text-destructive">{modelsError}</p>
                 )}
               </div>
