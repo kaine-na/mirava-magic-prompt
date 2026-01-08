@@ -280,11 +280,13 @@ export default function PromptGenerator() {
               )}
             </div>
 
-            {/* Batch Size Selector */}
-            <div className="mt-4 flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:justify-between">
-              <div className="flex items-center gap-2">
-                <Layers className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-medium">Batch Size:</span>
+            {/* Prompt Count Selector */}
+            <div className="mt-4 flex flex-col gap-3">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
+                <div className="flex items-center gap-2">
+                  <Layers className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">Jumlah prompt per idea:</span>
+                </div>
                 <div className="flex gap-1">
                   {batchOptions.map((size) => (
                     <button
@@ -303,23 +305,32 @@ export default function PromptGenerator() {
                 </div>
               </div>
               
-              <Button
-                onClick={handleGenerate}
-                disabled={isLoading || !hasApiKey}
-                className="w-full sm:w-auto min-w-[160px]"
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 sm:h-5 sm:w-5 animate-spin" />
-                    <span className="text-sm sm:text-base">Generating {batchSize}...</span>
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={2.5} />
-                    <span className="text-sm sm:text-base">Generate {batchSize}</span>
-                  </>
-                )}
-              </Button>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="text-muted-foreground">Total prompt:</span>
+                  <span className="px-2.5 py-1 bg-quaternary text-quaternary-foreground rounded-full border-2 border-foreground font-bold text-xs">
+                    {batchSize} prompt{batchSize > 1 ? 's' : ''}
+                  </span>
+                </div>
+                
+                <Button
+                  onClick={handleGenerate}
+                  disabled={isLoading || !hasApiKey}
+                  className="min-w-[160px]"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 sm:h-5 sm:w-5 animate-spin" />
+                      <span className="text-sm sm:text-base">Generating...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={2.5} />
+                      <span className="text-sm sm:text-base">Generate</span>
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
