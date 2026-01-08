@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Settings as SettingsIcon, Key, Eye, EyeOff, Trash2, Check, Sparkles, RefreshCw, Bot } from "lucide-react";
+import { Settings as SettingsIcon, Key, Eye, EyeOff, Trash2, Check, Sparkles, RefreshCw, Bot, Link2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -40,22 +40,39 @@ const providers = [
     color: "bg-primary",
     url: "https://console.groq.com/keys",
   },
+  {
+    id: "custom" as ApiProvider,
+    name: "Custom",
+    description: "OpenAI-compatible API",
+    color: "bg-muted",
+    url: "",
+  },
 ];
 
 export default function Settings() {
-  const { apiKey, provider, model, setApiKey, setProvider, setModel, clearApiKey, hasApiKey } = useApiKey();
+  const { apiKey, provider, model, baseUrl, setApiKey, setProvider, setModel, setBaseUrl, clearApiKey, hasApiKey } = useApiKey();
   const { models, isLoading: isLoadingModels, error: modelsError, fetchModels } = useModels();
   const [inputKey, setInputKey] = useState(apiKey);
+  const [inputBaseUrl, setInputBaseUrl] = useState(baseUrl);
   const [showKey, setShowKey] = useState(false);
   const [saved, setSaved] = useState(false);
   const { toast } = useToast();
 
   // Fetch models when API key is saved
   useEffect(() => {
-    if (hasApiKey) {
-      fetchModels(provider, apiKey);
+    if (hasApiKey && (provider !== "custom" || baseUrl)) {
+      fetchModels(provider, apiKey, baseUrl);
     }
-  }, [provider, hasApiKey]);
+  }, [provider, hasApiKey, baseUrl]);
+
+  // Sync input states when values change
+  useEffect(() => {
+    setInputKey(apiKey);
+  }, [apiKey]);
+
+  useEffect(() => {
+    setInputBaseUrl(baseUrl);
+  }, [baseUrl]);
 
   const handleSave = () => {
     if (!inputKey.trim()) {
@@ -67,16 +84,29 @@ export default function Settings() {
       return;
     }
 
+    if (provider === "custom" && !inputBaseUrl.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a base URL for custom provider",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setApiKey(inputKey);
+    if (provider === "custom") {
+      setBaseUrl(inputBaseUrl);
+    }
+    
     setSaved(true);
     toast({
       title: "✨ Saved!",
-      description: "Your API key has been saved securely",
+      description: "Your settings have been saved",
     });
     setTimeout(() => setSaved(false), 2000);
     
     // Fetch models with the new key
-    fetchModels(provider, inputKey);
+    fetchModels(provider, inputKey, provider === "custom" ? inputBaseUrl : undefined);
   };
 
   const handleClear = () => {
@@ -90,7 +120,7 @@ export default function Settings() {
 
   const handleRefreshModels = () => {
     if (hasApiKey) {
-      fetchModels(provider, apiKey);
+      fetchModels(provider, apiKey, provider === "custom" ? baseUrl : undefined);
       toast({
         title: "Refreshing models...",
         description: "Fetching available models from API",
@@ -127,11 +157,11 @@ export default function Settings() {
               Select AI Provider
             </CardTitle>
             <CardDescription className="text-xs sm:text-sm">
-              Choose which AI service to use for prompt generation
+              All providers use OpenAI-compatible format
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-0">
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
               {providers.map((prov) => {
                 const isSelected = provider === prov.id;
                 return (
@@ -157,8 +187,8 @@ export default function Settings() {
                         </span>
                       </div>
                       <div className="min-w-0">
-                        <p className="font-semibold text-sm sm:text-base truncate">{prov.name}</p>
-                        <p className="text-[10px] sm:text-xs text-muted-foreground truncate">{prov.description}</p>
+                        <p className="font-semibold text-xs sm:text-sm truncate">{prov.name}</p>
+                        <p className="text-[9px] sm:text-[10px] text-muted-foreground truncate">{prov.description}</p>
                       </div>
                     </div>
                     {isSelected && (
@@ -172,6 +202,30 @@ export default function Settings() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Custom Base URL (only for custom provider) */}
+        {provider === "custom" && (
+          <Card className="mb-6 hover:translate-x-0 hover:translate-y-0 hover:shadow-hard">
+            <CardHeader className="pb-3 sm:pb-4">
+              <CardTitle className="font-heading text-base sm:text-lg flex items-center gap-2">
+                <Link2 className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={2.5} />
+                API Base URL
+              </CardTitle>
+              <CardDescription className="text-xs sm:text-sm">
+                Enter your OpenAI-compatible API endpoint (e.g., https://api.example.com/v1)
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <Input
+                type="url"
+                placeholder="https://api.example.com/v1"
+                value={inputBaseUrl}
+                onChange={(e) => setInputBaseUrl(e.target.value)}
+                className="text-sm sm:text-base"
+              />
+            </CardContent>
+          </Card>
+        )}
 
         {/* API Key Input */}
         <Card className="mb-6 hover:translate-x-0 hover:translate-y-0 hover:shadow-hard">
@@ -241,7 +295,7 @@ export default function Settings() {
         </Card>
 
         {/* Model Selection */}
-        {hasApiKey && (
+        {hasApiKey && (provider !== "custom" || baseUrl) && (
           <Card className="mb-6 hover:translate-x-0 hover:translate-y-0 hover:shadow-hard">
             <CardHeader className="pb-3 sm:pb-4">
               <CardTitle className="font-heading text-base sm:text-lg flex items-center gap-2">
@@ -294,7 +348,7 @@ export default function Settings() {
         <div className="mt-6 sm:mt-8 text-center px-4">
           <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
             Need an API key? Get one from{" "}
-            {providers.map((prov, i) => (
+            {providers.filter(p => p.url).map((prov, i, arr) => (
               <span key={prov.id}>
                 <a 
                   href={prov.url} 
@@ -310,7 +364,7 @@ export default function Settings() {
                 >
                   {prov.name}
                 </a>
-                {i < providers.length - 1 && (i === providers.length - 2 ? ", or " : ", ")}
+                {i < arr.length - 1 && (i === arr.length - 2 ? ", or " : ", ")}
               </span>
             ))}
           </p>
