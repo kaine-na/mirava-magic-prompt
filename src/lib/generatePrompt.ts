@@ -8,11 +8,27 @@ interface GenerateOptions {
   promptType: string;
   userInput: string;
   baseUrl?: string;
+  creativity?: number; // 1-5 scale
 }
 
 interface BatchGenerateOptions extends GenerateOptions {
   batchSize: number;
   onProgress?: (completed: number, total: number) => void;
+}
+
+// Map creativity level (1-5) to temperature, top_p, top_k
+function getCreativityParams(creativity: number = 3) {
+  const level = Math.max(1, Math.min(5, creativity));
+  
+  const params = {
+    1: { temperature: 0.3, top_p: 0.7, top_k: 20 },   // Very focused
+    2: { temperature: 0.5, top_p: 0.8, top_k: 30 },   // Balanced-low
+    3: { temperature: 0.7, top_p: 0.9, top_k: 40 },   // Balanced
+    4: { temperature: 0.9, top_p: 0.95, top_k: 60 },  // Creative
+    5: { temperature: 1.2, top_p: 1.0, top_k: 100 },  // Very creative
+  };
+  
+  return params[level as keyof typeof params];
 }
 
 // Single prompt generation
@@ -24,7 +40,8 @@ async function generateSinglePrompt({
   userInput,
   baseUrl: customBaseUrl,
   variationIndex,
-}: GenerateOptions & { variationIndex: number }): Promise<string> {
+  creativity = 3,
+}: GenerateOptions & { variationIndex: number; creativity?: number }): Promise<string> {
   const systemPrompt = getPromptTemplate(promptType, userInput);
   
   let baseUrl: string;
@@ -82,7 +99,7 @@ START YOUR RESPONSE DIRECTLY WITH THE PROMPT CONTENT.`
         { role: "user", content: systemPrompt },
       ],
       max_tokens: 500,
-      temperature: 0.9 + (variationIndex * 0.05), // Slightly vary temperature per request
+      ...getCreativityParams(creativity),
     }),
   });
 
@@ -107,6 +124,7 @@ export async function generatePromptBatch({
   baseUrl,
   batchSize,
   onProgress,
+  creativity,
 }: BatchGenerateOptions): Promise<string[]> {
   let completed = 0;
   const successfulPrompts: string[] = [];
@@ -123,6 +141,7 @@ export async function generatePromptBatch({
         userInput,
         baseUrl,
         variationIndex: index,
+        creativity,
       });
       successfulPrompts.push(result);
       completed++;
