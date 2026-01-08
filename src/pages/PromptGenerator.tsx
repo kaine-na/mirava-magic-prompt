@@ -214,12 +214,17 @@ export default function PromptGenerator() {
           </Card>
         )}
 
-        {/* Current Prompt Type Badge */}
+        {/* Current Prompt Type & Model Badge */}
         <div className="mb-4 sm:mb-6 flex flex-wrap items-center gap-2">
           <span className="text-xs sm:text-sm text-muted-foreground">Selected:</span>
           <span className="px-2.5 py-1 sm:px-3 sm:py-1.5 bg-primary text-primary-foreground rounded-full border-2 border-foreground font-semibold text-xs sm:text-sm shadow-hard-sm">
             {promptTypeLabels[promptType] || promptType}
           </span>
+          {hasApiKey && (
+            <span className="px-2.5 py-1 sm:px-3 sm:py-1.5 bg-muted text-muted-foreground rounded-full border-2 border-border font-medium text-xs sm:text-sm">
+              Model: {provider === "custom" ? selectedCustomModel?.name || "Not set" : model || "Not set"}
+            </span>
+          )}
           <span className="text-[10px] sm:text-xs text-muted-foreground hidden sm:inline">← Change in sidebar</span>
         </div>
 

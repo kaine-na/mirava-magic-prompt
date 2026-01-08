@@ -1,173 +1,184 @@
 export const promptTemplates: Record<string, string> = {
-  image: `You are an expert prompt engineer for AI image generation (Midjourney, DALL-E, Stable Diffusion). Create a detailed, creative prompt based on the user's description.
+  image: `Create an exceptional, highly detailed image generation prompt based on this concept:
 
-Guidelines:
-- Be specific about style, lighting, colors, and mood
-- Include artistic influences or techniques (oil painting, digital art, photography, etc.)
-- Specify composition and camera angles if relevant
-- Add quality modifiers (highly detailed, 8k, photorealistic, cinematic lighting, etc.)
-- Include aspect ratio suggestions when appropriate
+"{input}"
 
-User's idea: {input}
+Requirements for your prompt:
+- Describe the subject with vivid, specific details
+- Include artistic style (photography, digital art, oil painting, anime, 3D render, etc.)
+- Specify lighting conditions (golden hour, dramatic shadows, soft diffused light, neon glow)
+- Define color palette and mood (warm tones, muted pastels, vibrant saturated colors)
+- Add composition details (close-up, wide angle, bird's eye view, rule of thirds)
+- Include quality enhancers (8k resolution, highly detailed, masterpiece, professional)
+- Mention texture and material details where relevant
+- Add atmosphere and environment context
 
-Generate a detailed image prompt:`,
+Generate ONE perfect prompt as a single flowing sentence with comma-separated descriptors.`,
 
-  video: `You are an expert prompt engineer for AI video generation (Sora, Runway, Pika Labs). Create a detailed prompt for video content.
+  video: `Create a compelling video generation prompt based on this concept:
 
-Guidelines:
-- Describe the scene, action, and movement clearly
-- Specify camera movements (pan, zoom, tracking shot, etc.)
-- Include timing and pacing suggestions
-- Mention style (cinematic, documentary, animation, etc.)
-- Add atmosphere, lighting, and color grading notes
-- Consider transitions and scene changes
+"{input}"
 
-User's idea: {input}
+Requirements for your prompt:
+- Describe the scene and primary action with clarity
+- Specify camera movement (slow pan, tracking shot, zoom in, orbital, static)
+- Include timing and pacing (slow motion, real-time, time-lapse)
+- Define visual style (cinematic, documentary, animated, music video aesthetic)
+- Add lighting and color grading (warm tones, cool blue, high contrast, filmic)
+- Mention atmosphere and mood (tense, peaceful, energetic, mysterious)
+- Include environmental details and background elements
 
-Generate a detailed video generation prompt:`,
+Generate ONE perfect prompt as a single flowing sentence describing the video scene.`,
 
-  social: `You are an expert social media content strategist. Create engaging social media post content based on the user's requirements.
+  social: `Create an engaging social media post based on this requirement:
 
-Guidelines:
-- Match the platform's tone (Instagram, Twitter/X, LinkedIn, TikTok)
-- Include attention-grabbing hooks
-- Add relevant hashtag suggestions
-- Keep appropriate length for the platform
-- Include call-to-action when relevant
-- Suggest emoji usage for engagement
-- Consider trending formats and styles
+"{input}"
 
-User's requirements: {input}
+Requirements for your content:
+- Start with an attention-grabbing hook
+- Use conversational, authentic tone
+- Include relevant emojis strategically placed
+- Add a clear call-to-action
+- Suggest 3-5 relevant hashtags at the end
+- Keep it platform-appropriate length
+- Make it shareable and engaging
 
-Generate a social media post:`,
+Generate the complete social media post as one cohesive piece.`,
 
-  "3d": `You are an expert prompt engineer for AI 3D model generation (Tripo3D, Meshy, Point-E). Create a detailed prompt for 3D content.
+  "3d": `Create a detailed 3D model generation prompt based on this concept:
 
-Guidelines:
-- Describe the object/character from multiple angles
-- Specify materials, textures, and surface properties
-- Include lighting and rendering style preferences
-- Mention polygon count/detail level requirements
-- Add color palette and finish (matte, glossy, metallic)
-- Consider the intended use (game asset, product viz, animation)
+"{input}"
 
-User's idea: {input}
+Requirements for your prompt:
+- Describe the object from multiple perspectives
+- Specify materials and surface properties (matte, glossy, metallic, rough, smooth)
+- Include color palette and finish details
+- Define the level of detail (high poly, game-ready, sculpted)
+- Add lighting and rendering style (PBR, stylized, realistic)
+- Mention scale and proportions
+- Include intended use context (game asset, product visualization, character)
 
-Generate a 3D model generation prompt:`,
+Generate ONE perfect prompt describing the 3D model in detail.`,
 
-  chat: `You are an expert at crafting system prompts for conversational AI. Create an effective system prompt based on the user's requirements.
+  chat: `Create an effective system prompt for a conversational AI based on this requirement:
 
-Guidelines:
-- Define the AI's role and personality clearly
-- Include behavioral guidelines and constraints
-- Specify the tone and communication style
-- Add relevant context and domain knowledge
-- Include example responses if helpful
-- Define boundaries and limitations
+"{input}"
 
-User's requirements: {input}
+Requirements for your system prompt:
+- Define the AI's role and expertise clearly
+- Establish personality traits and communication style
+- Set behavioral guidelines and response patterns
+- Include relevant domain knowledge context
+- Define limitations and boundaries
+- Specify tone (professional, friendly, formal, casual)
+- Add response formatting preferences
 
-Generate a system prompt:`,
+Generate ONE comprehensive system prompt that sets up the AI perfectly.`,
 
-  code: `You are an expert at creating prompts for code generation AI. Create a detailed prompt that will produce high-quality code.
+  code: `Create a precise code generation prompt based on this requirement:
 
-Guidelines:
-- Specify the programming language and framework
-- Include requirements and constraints
-- Mention code style and best practices
-- Request documentation and error handling
-- Consider edge cases and validation
-- Specify testing requirements if needed
+"{input}"
 
-User's requirements: {input}
+Requirements for your prompt:
+- Specify the programming language and version
+- Include framework or library requirements
+- Define coding standards and best practices to follow
+- Request proper error handling and validation
+- Mention documentation and comments needs
+- Include edge cases to consider
+- Specify testing requirements if applicable
 
-Generate a code generation prompt:`,
+Generate ONE clear and detailed prompt for code generation.`,
 
-  music: `You are an expert at creating prompts for AI music generation (Suno, Udio, MusicGen). Create a detailed prompt for audio content.
+  music: `Create a detailed music generation prompt based on this concept:
 
-Guidelines:
-- Specify genre, mood, and tempo (BPM if known)
-- Include instrument preferences and arrangement
-- Describe the structure (intro, verse, chorus, bridge, outro)
-- Mention influences or reference tracks
-- Add vocal style if applicable (male, female, choir, instrumental)
-- Include energy level and dynamics
+"{input}"
 
-User's idea: {input}
+Requirements for your prompt:
+- Specify genre and subgenre clearly
+- Include tempo range (BPM) and energy level
+- Define mood and emotional qualities
+- Mention instrumentation and arrangement style
+- Add structure suggestions (intro, verse, chorus, bridge)
+- Include vocal style if applicable (or specify instrumental)
+- Reference similar artists or tracks for style guidance
+- Describe dynamics and progression
 
-Generate a music generation prompt:`,
+Generate ONE flowing prompt describing the music piece.`,
 
-  writing: `You are an expert at creating prompts for creative writing AI. Create an inspiring prompt for content creation.
+  writing: `Create an inspiring creative writing prompt based on this concept:
 
-Guidelines:
-- Specify the format (story, article, poem, script, etc.)
-- Define the tone and target audience
-- Include themes and key elements
-- Mention style preferences and influences
-- Consider length and structure
-- Add any specific requirements
+"{input}"
 
-User's idea: {input}
+Requirements for your prompt:
+- Specify the format (short story, article, poem, script, essay)
+- Define the target audience and reading level
+- Include tone and style preferences
+- Set the theme and key elements to explore
+- Mention perspective and narrative voice
+- Add length guidelines if relevant
+- Include any specific requirements or constraints
 
-Generate a creative writing prompt:`,
+Generate ONE comprehensive writing prompt.`,
 
-  marketing: `You are an expert marketing copywriter. Create compelling marketing copy based on the user's requirements.
+  marketing: `Create compelling marketing copy based on this requirement:
 
-Guidelines:
-- Identify the target audience clearly
-- Use persuasive language and emotional triggers
-- Include a strong unique value proposition
-- Add clear call-to-action
-- Consider the platform and format (ad, landing page, email)
-- Use power words and urgency when appropriate
-- Keep it concise and impactful
+"{input}"
 
-User's requirements: {input}
-
-Generate marketing copy:`,
-
-  email: `You are an expert business communication specialist. Create a professional email based on the user's requirements.
-
-Guidelines:
-- Match the appropriate tone (formal, semi-formal, casual)
-- Include a clear and compelling subject line
-- Structure with proper greeting, body, and closing
+Requirements for your copy:
+- Identify and speak to the target audience
+- Lead with benefits, not features
+- Use emotional triggers and power words
+- Include a strong, clear call-to-action
+- Create urgency or exclusivity where appropriate
 - Keep it concise and scannable
+- Make the value proposition crystal clear
+
+Generate the marketing copy as one polished piece.`,
+
+  email: `Create a professional email based on this requirement:
+
+"{input}"
+
+Requirements for your email:
+- Write a compelling subject line
+- Start with appropriate greeting
+- Get to the point quickly in the opening
+- Structure the body for easy reading
 - Include specific call-to-action
-- Consider the recipient and relationship
-- Add appropriate sign-off
+- End with appropriate closing and sign-off
+- Match the tone to the context (formal, semi-formal, friendly)
 
-User's requirements: {input}
+Generate the complete email with subject line.`,
 
-Generate a professional email:`,
+  art: `Create an artistic style prompt based on this concept:
 
-  art: `You are an expert prompt engineer for artistic style transfer and AI art. Create a detailed prompt for applying specific art styles.
+"{input}"
 
-Guidelines:
-- Specify the art movement or artist style (Impressionism, Van Gogh, Cyberpunk, etc.)
-- Include technique details (brushstrokes, color palette, composition)
-- Describe the mood and atmosphere
-- Add historical or cultural context if relevant
-- Mention medium simulation (oil, watercolor, digital, etc.)
-- Include lighting and texture preferences
+Requirements for your prompt:
+- Specify the art movement or artist influence
+- Include technique details (brushwork, texture, composition)
+- Define the color palette and harmony
+- Add medium simulation (oil paint, watercolor, charcoal, digital)
+- Describe mood, atmosphere, and emotional impact
+- Mention lighting and shadow treatment
+- Include any historical or cultural context
 
-User's idea: {input}
+Generate ONE detailed prompt in the specified artistic style.`,
 
-Generate an artistic style prompt:`,
+  custom: `Create an optimized prompt based on this request:
 
-  custom: `You are an expert prompt engineer. Help create an effective prompt based on the user's needs.
+"{input}"
 
-Guidelines:
-- Understand the task and goal
-- Structure the prompt clearly
-- Include relevant context
-- Add specific instructions
-- Consider the target AI model
-- Optimize for best results
+Requirements:
+- Understand the core goal and desired outcome
+- Structure the prompt for maximum clarity
+- Include all relevant context and specifications
+- Add specific instructions for best results
+- Consider the target AI model's strengths
+- Optimize for quality output
 
-User's request: {input}
-
-Generate an optimized prompt:`,
+Generate ONE perfect, focused prompt for this request.`,
 };
 
 export function getPromptTemplate(type: string, userInput: string): string {
