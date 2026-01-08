@@ -66,19 +66,19 @@ export function AppSidebar({ selectedPromptType, onSelectPromptType }: AppSideba
     <>
       {/* Desktop Sidebar */}
       <motion.aside
-        className="hidden md:flex flex-col h-full bg-sidebar border-r-2 border-foreground flex-shrink-0 relative"
+        className="hidden md:flex flex-col h-screen bg-sidebar border-r-2 border-foreground flex-shrink-0 sticky top-0"
         initial={false}
-        animate={{ width: isOpen ? 200 : 56 }}
+        animate={{ width: isOpen ? 260 : 64 }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
-        <div className="flex flex-col h-full px-2 py-4">
+        <div className="flex flex-col h-full px-3 py-4">
           {/* Header: Logo + Pin */}
-          <div className="flex items-center justify-between mb-4">
-            <Link to="/" className="flex items-center gap-2">
+          <div className="flex items-center justify-between mb-6">
+            <Link to="/" className="flex items-center gap-2.5">
               <div className="relative flex-shrink-0">
-                <div className="w-8 h-8 bg-tertiary rounded-full border-2 border-foreground shadow-hard-sm flex items-center justify-center">
+                <div className="w-9 h-9 bg-tertiary rounded-full border-2 border-foreground shadow-hard-sm flex items-center justify-center">
                   <Zap className="h-4 w-4 text-tertiary-foreground" strokeWidth={2.5} />
                 </div>
                 <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-secondary rounded-full border-2 border-foreground" />
@@ -91,7 +91,7 @@ export function AppSidebar({ selectedPromptType, onSelectPromptType }: AppSideba
                     exit={{ opacity: 0, width: 0 }}
                     className="overflow-hidden"
                   >
-                    <h1 className="font-heading font-bold text-sm whitespace-nowrap">PromptGen</h1>
+                    <h1 className="font-heading font-bold text-base whitespace-nowrap">PromptGen</h1>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -142,7 +142,7 @@ export function AppSidebar({ selectedPromptType, onSelectPromptType }: AppSideba
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-1 mb-1"
+                  className="text-xs font-bold text-muted-foreground uppercase tracking-wider px-2 mb-2"
                 >
                   Generative AI
                 </motion.span>
@@ -158,7 +158,7 @@ export function AppSidebar({ selectedPromptType, onSelectPromptType }: AppSideba
                       <button
                         onClick={() => handleSelectPromptType(item.id)}
                         className={cn(
-                          "flex items-center gap-2.5 py-2 px-1.5 rounded-lg transition-all duration-200 group/item w-full",
+                          "flex items-center gap-3 py-2.5 px-2 rounded-xl transition-all duration-200 group/item w-full",
                           isActive ? "bg-muted" : "hover:bg-muted/50"
                         )}
                       >
@@ -167,11 +167,11 @@ export function AppSidebar({ selectedPromptType, onSelectPromptType }: AppSideba
                             whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.95 }}
                             className={cn(
-                              "w-7 h-7 rounded-full border-2 border-foreground flex items-center justify-center",
+                              "w-9 h-9 rounded-full border-2 border-foreground flex items-center justify-center",
                               item.color
                             )}
                           >
-                            <item.icon className="h-3.5 w-3.5 text-primary-foreground" strokeWidth={2.5} />
+                            <item.icon className="h-4 w-4 text-primary-foreground" strokeWidth={2.5} />
                           </motion.div>
                           {/* Active dot */}
                           <AnimatePresence>
@@ -200,7 +200,7 @@ export function AppSidebar({ selectedPromptType, onSelectPromptType }: AppSideba
                               animate={{ opacity: 1, x: 0 }}
                               exit={{ opacity: 0, x: -10 }}
                               className={cn(
-                                "text-sm whitespace-nowrap overflow-hidden",
+                                "text-base whitespace-nowrap overflow-hidden",
                                 isActive ? "font-semibold" : "font-medium"
                               )}
                             >
@@ -221,7 +221,7 @@ export function AppSidebar({ selectedPromptType, onSelectPromptType }: AppSideba
             </TooltipProvider>
 
             {/* Divider */}
-            <div className="my-2 border-t border-border" />
+            <div className="my-3 border-t border-border" />
 
             {/* Settings */}
             <TooltipProvider delayDuration={0}>
@@ -230,16 +230,16 @@ export function AppSidebar({ selectedPromptType, onSelectPromptType }: AppSideba
                   <Link
                     to="/settings"
                     className={cn(
-                      "flex items-center gap-2.5 py-2 px-1.5 rounded-lg transition-all duration-200 w-full",
+                      "flex items-center gap-3 py-2.5 px-2 rounded-xl transition-all duration-200 w-full",
                       isSettingsActive ? "bg-muted" : "hover:bg-muted/50"
                     )}
                   >
                     <motion.div 
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.95 }}
-                      className="w-7 h-7 rounded-full border-2 border-foreground bg-muted flex items-center justify-center flex-shrink-0"
+                      className="w-9 h-9 rounded-full border-2 border-foreground bg-muted flex items-center justify-center flex-shrink-0"
                     >
-                      <Settings className="h-3.5 w-3.5" strokeWidth={2.5} />
+                      <Settings className="h-4 w-4" strokeWidth={2.5} />
                     </motion.div>
                     <AnimatePresence>
                       {isOpen && (
@@ -247,7 +247,7 @@ export function AppSidebar({ selectedPromptType, onSelectPromptType }: AppSideba
                           initial={{ opacity: 0, x: -10 }}
                           animate={{ opacity: 1, x: 0 }}
                           exit={{ opacity: 0, x: -10 }}
-                          className="font-semibold text-sm whitespace-nowrap"
+                          className="font-semibold text-base whitespace-nowrap"
                         >
                           Settings
                         </motion.span>
