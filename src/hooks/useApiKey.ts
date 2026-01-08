@@ -3,17 +3,18 @@ import { useState, useEffect } from "react";
 const API_KEY_STORAGE_KEY = "promptgen_api_key";
 const API_PROVIDER_STORAGE_KEY = "promptgen_api_provider";
 const API_MODEL_STORAGE_KEY = "promptgen_api_model";
+const API_BASE_URL_STORAGE_KEY = "promptgen_api_base_url";
 
-export type ApiProvider = "openai" | "gemini" | "openrouter" | "groq";
+export type ApiProvider = "openai" | "gemini" | "openrouter" | "groq" | "custom";
 
-export const providerEndpoints: Record<ApiProvider, { base: string; modelsPath: string }> = {
+export const providerEndpoints: Record<Exclude<ApiProvider, "custom">, { base: string; modelsPath: string }> = {
   openai: {
     base: "https://api.openai.com/v1",
     modelsPath: "/models",
   },
   gemini: {
     base: "https://generativelanguage.googleapis.com/v1beta",
-    modelsPath: "/models",
+    modelsPath: "/openai/models",
   },
   openrouter: {
     base: "https://openrouter.ai/api/v1",
@@ -29,15 +30,18 @@ export function useApiKey() {
   const [apiKey, setApiKeyState] = useState<string>("");
   const [provider, setProviderState] = useState<ApiProvider>("openai");
   const [model, setModelState] = useState<string>("");
+  const [baseUrl, setBaseUrlState] = useState<string>("");
 
   useEffect(() => {
     const storedKey = localStorage.getItem(API_KEY_STORAGE_KEY);
     const storedProvider = localStorage.getItem(API_PROVIDER_STORAGE_KEY) as ApiProvider;
     const storedModel = localStorage.getItem(API_MODEL_STORAGE_KEY);
+    const storedBaseUrl = localStorage.getItem(API_BASE_URL_STORAGE_KEY);
     
     if (storedKey) setApiKeyState(storedKey);
     if (storedProvider) setProviderState(storedProvider);
     if (storedModel) setModelState(storedModel);
+    if (storedBaseUrl) setBaseUrlState(storedBaseUrl);
   }, []);
 
   const setApiKey = (key: string) => {
@@ -58,6 +62,11 @@ export function useApiKey() {
     localStorage.setItem(API_MODEL_STORAGE_KEY, mod);
   };
 
+  const setBaseUrl = (url: string) => {
+    setBaseUrlState(url);
+    localStorage.setItem(API_BASE_URL_STORAGE_KEY, url);
+  };
+
   const clearApiKey = () => {
     setApiKeyState("");
     setModelState("");
@@ -71,9 +80,11 @@ export function useApiKey() {
     apiKey,
     provider,
     model,
+    baseUrl,
     setApiKey,
     setProvider,
     setModel,
+    setBaseUrl,
     clearApiKey,
     hasApiKey,
   };

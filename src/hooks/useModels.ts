@@ -11,9 +11,14 @@ export function useModels() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchModels = useCallback(async (provider: ApiProvider, apiKey: string) => {
+  const fetchModels = useCallback(async (provider: ApiProvider, apiKey: string, customBaseUrl?: string) => {
     if (!apiKey) {
       setError("API key is required");
+      return;
+    }
+
+    if (provider === "custom" && !customBaseUrl) {
+      setError("Base URL is required for custom provider");
       return;
     }
 
@@ -22,58 +27,51 @@ export function useModels() {
     setModels([]);
 
     try {
-      const endpoint = providerEndpoints[provider];
-      let response: Response;
+      let baseUrl: string;
+      let modelsPath: string;
+
+      if (provider === "custom") {
+        // Remove trailing slash and add /models
+        baseUrl = customBaseUrl!.replace(/\/+$/, "");
+        modelsPath = "/models";
+      } else {
+        const endpoint = providerEndpoints[provider];
+        baseUrl = endpoint.base;
+        modelsPath = endpoint.modelsPath;
+      }
+
+      // All providers use OpenAI-compatible format with Bearer token
+      const response = await fetch(`${baseUrl}${modelsPath}`, {
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch models: ${response.status}`);
+      }
+
+      const data = await response.json();
       let modelsList: ModelInfo[] = [];
 
-      if (provider === "gemini") {
-        // Gemini uses API key as query parameter
-        response = await fetch(`${endpoint.base}${endpoint.modelsPath}?key=${apiKey}`);
-        
-        if (!response.ok) {
-          throw new Error(`Failed to fetch models: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        modelsList = (data.models || [])
-          .filter((m: any) => m.name?.includes("gemini"))
-          .map((m: any) => ({
-            id: m.name?.replace("models/", "") || m.name,
-            name: m.displayName || m.name?.replace("models/", "") || m.name,
-          }));
+      if (provider === "openrouter") {
+        modelsList = (data.data || []).map((m: any) => ({
+          id: m.id,
+          name: m.name || m.id,
+        }));
       } else {
-        // OpenAI, OpenRouter, Groq use Bearer token
-        response = await fetch(`${endpoint.base}${endpoint.modelsPath}`, {
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error(`Failed to fetch models: ${response.status}`);
-        }
-
-        const data = await response.json();
-        
-        if (provider === "openrouter") {
-          modelsList = (data.data || []).map((m: any) => ({
+        // OpenAI, Groq, Gemini (OpenAI-compatible), and Custom
+        modelsList = (data.data || [])
+          .filter((m: any) => {
+            if (provider === "openai") {
+              return m.id?.includes("gpt") || m.id?.includes("o1") || m.id?.includes("o3");
+            }
+            return true;
+          })
+          .map((m: any) => ({
             id: m.id,
-            name: m.name || m.id,
+            name: m.id,
           }));
-        } else {
-          // OpenAI and Groq
-          modelsList = (data.data || [])
-            .filter((m: any) => {
-              if (provider === "openai") {
-                return m.id?.includes("gpt") || m.id?.includes("o1") || m.id?.includes("o3");
-              }
-              return true;
-            })
-            .map((m: any) => ({
-              id: m.id,
-              name: m.id,
-            }));
-        }
       }
 
       // Sort alphabetically

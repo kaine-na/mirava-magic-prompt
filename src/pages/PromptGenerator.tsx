@@ -36,7 +36,7 @@ export default function PromptGenerator() {
   const [isSaved, setIsSaved] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  const { apiKey, provider, model, hasApiKey } = useApiKey();
+  const { apiKey, provider, model, baseUrl, hasApiKey } = useApiKey();
   const { history, addToHistory, removeFromHistory, toggleFavorite, clearHistory } = usePromptHistory();
   const { toast } = useToast();
 
@@ -106,6 +106,7 @@ export default function PromptGenerator() {
         model,
         promptType,
         userInput,
+        baseUrl,
       });
       setGeneratedPrompt(result);
       

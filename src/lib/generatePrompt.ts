@@ -7,6 +7,7 @@ interface GenerateOptions {
   model: string;
   promptType: string;
   userInput: string;
+  baseUrl?: string;
 }
 
 export async function generatePrompt({
@@ -15,111 +16,61 @@ export async function generatePrompt({
   model,
   promptType,
   userInput,
+  baseUrl: customBaseUrl,
 }: GenerateOptions): Promise<string> {
   const systemPrompt = getPromptTemplate(promptType, userInput);
-  const endpoint = providerEndpoints[provider];
-
-  if (provider === "openai") {
-    const response = await fetch(`${endpoint.base}/chat/completions`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: model || "gpt-4o-mini",
-        messages: [
-          { role: "system", content: "You are a helpful prompt engineering assistant." },
-          { role: "user", content: systemPrompt },
-        ],
-        max_tokens: 1000,
-      }),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error?.message || "OpenAI API error");
+  
+  // Get base URL - all providers use OpenAI-compatible format
+  let baseUrl: string;
+  
+  if (provider === "custom") {
+    if (!customBaseUrl) {
+      throw new Error("Base URL is required for custom provider");
     }
-
-    const data = await response.json();
-    return data.choices[0].message.content;
+    baseUrl = customBaseUrl.replace(/\/+$/, "");
+  } else {
+    baseUrl = providerEndpoints[provider].base;
   }
 
-  if (provider === "gemini") {
-    const modelId = model || "gemini-1.5-flash";
-    const response = await fetch(
-      `${endpoint.base}/models/${modelId}:generateContent?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: systemPrompt }] }],
-        }),
-      }
-    );
+  // All providers use OpenAI-compatible chat completions format
+  const response = await fetch(`${baseUrl}/chat/completions`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: model || getDefaultModel(provider),
+      messages: [
+        { role: "system", content: "You are a helpful prompt engineering assistant." },
+        { role: "user", content: systemPrompt },
+      ],
+      max_tokens: 1000,
+    }),
+  });
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error?.message || "Gemini API error");
-    }
-
-    const data = await response.json();
-    return data.candidates[0].content.parts[0].text;
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.error?.message || `${provider} API error: ${response.status}`);
   }
 
-  if (provider === "openrouter") {
-    const response = await fetch(`${endpoint.base}/chat/completions`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: model || "openai/gpt-4o-mini",
-        messages: [
-          { role: "system", content: "You are a helpful prompt engineering assistant." },
-          { role: "user", content: systemPrompt },
-        ],
-        max_tokens: 1000,
-      }),
-    });
+  const data = await response.json();
+  return data.choices[0].message.content;
+}
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error?.message || "OpenRouter API error");
-    }
-
-    const data = await response.json();
-    return data.choices[0].message.content;
+function getDefaultModel(provider: ApiProvider): string {
+  switch (provider) {
+    case "openai":
+      return "gpt-4o-mini";
+    case "gemini":
+      return "gemini-2.0-flash";
+    case "openrouter":
+      return "openai/gpt-4o-mini";
+    case "groq":
+      return "llama-3.3-70b-versatile";
+    case "custom":
+      return "gpt-3.5-turbo";
+    default:
+      return "gpt-4o-mini";
   }
-
-  if (provider === "groq") {
-    const response = await fetch(`${endpoint.base}/chat/completions`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: model || "llama-3.3-70b-versatile",
-        messages: [
-          { role: "system", content: "You are a helpful prompt engineering assistant." },
-          { role: "user", content: systemPrompt },
-        ],
-        max_tokens: 1000,
-      }),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error?.message || "Groq API error");
-    }
-
-    const data = await response.json();
-    return data.choices[0].message.content;
-  }
-
-  throw new Error("Invalid provider");
 }
