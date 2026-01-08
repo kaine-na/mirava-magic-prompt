@@ -1,11 +1,13 @@
-import { useState } from "react";
-import { Settings as SettingsIcon, Key, Eye, EyeOff, Trash2, Check, Sparkles } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Settings as SettingsIcon, Key, Eye, EyeOff, Trash2, Check, Sparkles, RefreshCw, Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { DecorativeShapes } from "@/components/prompt/DecorativeShapes";
 import { useApiKey, ApiProvider } from "@/hooks/useApiKey";
+import { useModels } from "@/hooks/useModels";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
@@ -13,29 +15,47 @@ const providers = [
   {
     id: "openai" as ApiProvider,
     name: "OpenAI",
-    description: "GPT-4o-mini",
+    description: "GPT-4o, GPT-4, etc.",
     color: "bg-quaternary",
-  },
-  {
-    id: "anthropic" as ApiProvider,
-    name: "Anthropic",
-    description: "Claude 3 Haiku",
-    color: "bg-secondary",
+    url: "https://platform.openai.com/api-keys",
   },
   {
     id: "gemini" as ApiProvider,
-    name: "Google",
-    description: "Gemini 1.5 Flash",
+    name: "Google Gemini",
+    description: "Gemini Pro, Flash, etc.",
     color: "bg-tertiary",
+    url: "https://aistudio.google.com/apikey",
+  },
+  {
+    id: "openrouter" as ApiProvider,
+    name: "OpenRouter",
+    description: "Multi-provider gateway",
+    color: "bg-secondary",
+    url: "https://openrouter.ai/keys",
+  },
+  {
+    id: "groq" as ApiProvider,
+    name: "Groq",
+    description: "Llama, Mixtral, etc.",
+    color: "bg-primary",
+    url: "https://console.groq.com/keys",
   },
 ];
 
 export default function Settings() {
-  const { apiKey, provider, setApiKey, setProvider, clearApiKey, hasApiKey } = useApiKey();
+  const { apiKey, provider, model, setApiKey, setProvider, setModel, clearApiKey, hasApiKey } = useApiKey();
+  const { models, isLoading: isLoadingModels, error: modelsError, fetchModels } = useModels();
   const [inputKey, setInputKey] = useState(apiKey);
   const [showKey, setShowKey] = useState(false);
   const [saved, setSaved] = useState(false);
   const { toast } = useToast();
+
+  // Fetch models when API key is saved
+  useEffect(() => {
+    if (hasApiKey) {
+      fetchModels(provider, apiKey);
+    }
+  }, [provider, hasApiKey]);
 
   const handleSave = () => {
     if (!inputKey.trim()) {
@@ -54,6 +74,9 @@ export default function Settings() {
       description: "Your API key has been saved securely",
     });
     setTimeout(() => setSaved(false), 2000);
+    
+    // Fetch models with the new key
+    fetchModels(provider, inputKey);
   };
 
   const handleClear = () => {
@@ -64,6 +87,18 @@ export default function Settings() {
       description: "Your API key has been removed",
     });
   };
+
+  const handleRefreshModels = () => {
+    if (hasApiKey) {
+      fetchModels(provider, apiKey);
+      toast({
+        title: "Refreshing models...",
+        description: "Fetching available models from API",
+      });
+    }
+  };
+
+  const currentProvider = providers.find(p => p.id === provider);
 
   return (
     <MainLayout>
@@ -96,7 +131,7 @@ export default function Settings() {
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-0">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
               {providers.map((prov) => {
                 const isSelected = provider === prov.id;
                 return (
@@ -110,10 +145,10 @@ export default function Settings() {
                         : "border-border bg-card/50 hover:border-foreground hover:shadow-hard-sm"
                     )}
                   >
-                    <div className="flex sm:flex-col items-center sm:items-start gap-3 sm:gap-0">
+                    <div className="flex flex-col items-start gap-2">
                       <div
                         className={cn(
-                          "w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 border-foreground flex items-center justify-center sm:mb-2 flex-shrink-0",
+                          "w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 border-foreground flex items-center justify-center flex-shrink-0",
                           prov.color
                         )}
                       >
@@ -121,9 +156,9 @@ export default function Settings() {
                           {prov.name.charAt(0)}
                         </span>
                       </div>
-                      <div>
-                        <p className="font-semibold text-sm sm:text-base">{prov.name}</p>
-                        <p className="text-xs text-muted-foreground">{prov.description}</p>
+                      <div className="min-w-0">
+                        <p className="font-semibold text-sm sm:text-base truncate">{prov.name}</p>
+                        <p className="text-[10px] sm:text-xs text-muted-foreground truncate">{prov.description}</p>
                       </div>
                     </div>
                     {isSelected && (
@@ -139,7 +174,7 @@ export default function Settings() {
         </Card>
 
         {/* API Key Input */}
-        <Card className="hover:translate-x-0 hover:translate-y-0 hover:shadow-hard">
+        <Card className="mb-6 hover:translate-x-0 hover:translate-y-0 hover:shadow-hard">
           <CardHeader className="pb-3 sm:pb-4">
             <CardTitle className="font-heading text-base sm:text-lg flex items-center gap-2">
               <Key className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={2.5} />
@@ -205,36 +240,79 @@ export default function Settings() {
           </CardContent>
         </Card>
 
+        {/* Model Selection */}
+        {hasApiKey && (
+          <Card className="mb-6 hover:translate-x-0 hover:translate-y-0 hover:shadow-hard">
+            <CardHeader className="pb-3 sm:pb-4">
+              <CardTitle className="font-heading text-base sm:text-lg flex items-center gap-2">
+                <Bot className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={2.5} />
+                Select Model
+              </CardTitle>
+              <CardDescription className="text-xs sm:text-sm">
+                Choose the AI model for generating prompts
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-0 space-y-3">
+              <div className="flex gap-2">
+                <Select value={model} onValueChange={setModel}>
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder={isLoadingModels ? "Loading models..." : "Select a model"} />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-60">
+                    {models.map((m) => (
+                      <SelectItem key={m.id} value={m.id}>
+                        {m.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  onClick={handleRefreshModels}
+                  disabled={isLoadingModels}
+                >
+                  <RefreshCw className={cn("h-4 w-4", isLoadingModels && "animate-spin")} />
+                </Button>
+              </div>
+
+              {modelsError && (
+                <p className="text-xs text-destructive">{modelsError}</p>
+              )}
+
+              {model && (
+                <div className="flex items-center gap-2 p-2.5 sm:p-3 rounded-xl border-2 bg-tertiary/10 border-tertiary">
+                  <Bot className="h-4 w-4 text-tertiary flex-shrink-0" />
+                  <span className="text-xs sm:text-sm font-medium truncate">Using: {model}</span>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
         {/* Info */}
         <div className="mt-6 sm:mt-8 text-center px-4">
           <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
             Need an API key? Get one from{" "}
-            <a 
-              href="https://platform.openai.com/api-keys" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="text-primary underline underline-offset-4 hover:text-primary/80"
-            >
-              OpenAI
-            </a>
-            ,{" "}
-            <a 
-              href="https://console.anthropic.com/" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="text-secondary underline underline-offset-4 hover:text-secondary/80"
-            >
-              Anthropic
-            </a>
-            , or{" "}
-            <a 
-              href="https://aistudio.google.com/apikey" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="text-tertiary underline underline-offset-4 hover:text-tertiary/80"
-            >
-              Google AI
-            </a>
+            {providers.map((prov, i) => (
+              <span key={prov.id}>
+                <a 
+                  href={prov.url} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className={cn(
+                    "underline underline-offset-4 hover:opacity-80",
+                    prov.id === "openai" && "text-quaternary",
+                    prov.id === "gemini" && "text-tertiary",
+                    prov.id === "openrouter" && "text-secondary",
+                    prov.id === "groq" && "text-primary"
+                  )}
+                >
+                  {prov.name}
+                </a>
+                {i < providers.length - 1 && (i === providers.length - 2 ? ", or " : ", ")}
+              </span>
+            ))}
           </p>
         </div>
       </div>
