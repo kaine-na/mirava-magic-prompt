@@ -355,10 +355,12 @@ ${generatedPrompts.join('\n')}`;
             </div>
 
             {/* Prompt Count Input */}
-            <div className="mt-4 flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:justify-between">
-              <div className="flex items-center gap-2">
-                <Layers className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-medium">Jumlah prompt per idea:</span>
+            <div className="mt-4 flex flex-col gap-4">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <Layers className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">Jumlah prompt per idea:</span>
+                </div>
                 <input
                   type="number"
                   min={1}
@@ -367,29 +369,29 @@ ${generatedPrompts.join('\n')}`;
                     const val = parseInt(e.target.value) || 1;
                     setBatchSize(Math.max(val, 1));
                   }}
-                  className="w-24 h-10 px-3 text-center text-base font-bold rounded-xl border-2 border-foreground bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-16 h-9 px-2 text-center text-sm font-bold rounded-xl border-2 border-foreground bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
               
-              <div className="flex items-center gap-3">
-                <span className="px-2.5 py-1 bg-quaternary text-quaternary-foreground rounded-full border-2 border-foreground font-bold text-xs">
+              <div className="flex items-center gap-2">
+                <span className="px-3 py-2 bg-quaternary text-quaternary-foreground rounded-full border-2 border-foreground font-bold text-xs whitespace-nowrap">
                   Total: {batchSize} prompt{batchSize > 1 ? 's' : ''}
                 </span>
                 
                 <Button
                   onClick={handleGenerate}
                   disabled={isLoading || !hasApiKey}
-                  className="min-w-[160px]"
+                  className="flex-1"
                 >
                   {isLoading ? (
                     <>
-                      <Loader2 className="h-4 w-4 sm:h-5 sm:w-5 animate-spin" />
-                      <span className="text-sm sm:text-base">{progress.completed}/{progress.total}</span>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span className="text-sm">{progress.completed}/{progress.total}</span>
                     </>
                   ) : (
                     <>
-                      <Sparkles className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={2.5} />
-                      <span className="text-sm sm:text-base">Generate</span>
+                      <Sparkles className="h-4 w-4" strokeWidth={2.5} />
+                      <span className="text-sm">Generate</span>
                     </>
                   )}
                 </Button>
