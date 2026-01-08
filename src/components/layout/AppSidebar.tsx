@@ -18,6 +18,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useClickSound } from "@/hooks/useClickSound";
 
 const promptTypes = [
   { id: "image", title: "Image", icon: Image, color: "bg-primary" },
@@ -69,6 +70,12 @@ function SidebarContent({
   open: boolean;
 }) {
   const location = useLocation();
+  const { playClick } = useClickSound();
+
+  const handleItemClick = (id: string) => {
+    playClick();
+    onSelectPromptType(id);
+  };
 
   return (
     <>
@@ -118,7 +125,7 @@ function SidebarContent({
                         stiffness: 400,
                         damping: 20,
                       }}
-                      onClick={() => onSelectPromptType(item.id)}
+                      onClick={() => handleItemClick(item.id)}
                       className={cn(
                         "flex items-center gap-2.5 py-2 px-1 rounded-lg transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] group/item",
                         isActive
