@@ -12,6 +12,7 @@ interface GenerateOptions {
 
 interface BatchGenerateOptions extends GenerateOptions {
   batchSize: number;
+  onProgress?: (completed: number, total: number) => void;
 }
 
 // Single prompt generation
@@ -96,7 +97,7 @@ START YOUR RESPONSE DIRECTLY WITH THE PROMPT CONTENT.`
   return parsePrompt(rawPrompt);
 }
 
-// Batch parallel generation
+// Batch parallel generation with progress tracking
 export async function generatePromptBatch({
   apiKey,
   provider,
@@ -105,31 +106,41 @@ export async function generatePromptBatch({
   userInput,
   baseUrl,
   batchSize,
+  onProgress,
 }: BatchGenerateOptions): Promise<string[]> {
-  // Create array of promises for parallel execution
-  const promises = Array.from({ length: batchSize }, (_, index) =>
-    generateSinglePrompt({
-      apiKey,
-      provider,
-      model,
-      promptType,
-      userInput,
-      baseUrl,
-      variationIndex: index,
-    })
-  );
+  let completed = 0;
+  const successfulPrompts: string[] = [];
+  const errors: Error[] = [];
+
+  // Create wrapped promises that report progress
+  const promises = Array.from({ length: batchSize }, async (_, index) => {
+    try {
+      const result = await generateSinglePrompt({
+        apiKey,
+        provider,
+        model,
+        promptType,
+        userInput,
+        baseUrl,
+        variationIndex: index,
+      });
+      successfulPrompts.push(result);
+      completed++;
+      onProgress?.(completed, batchSize);
+      return result;
+    } catch (error) {
+      completed++;
+      onProgress?.(completed, batchSize);
+      errors.push(error instanceof Error ? error : new Error("Unknown error"));
+      return null;
+    }
+  });
 
   // Execute all in parallel
-  const results = await Promise.allSettled(promises);
-  
-  // Extract successful results, throw if all failed
-  const successfulPrompts = results
-    .filter((result): result is PromiseFulfilledResult<string> => result.status === "fulfilled")
-    .map(result => result.value);
+  await Promise.all(promises);
 
   if (successfulPrompts.length === 0) {
-    const firstError = results.find((r): r is PromiseRejectedResult => r.status === "rejected");
-    throw new Error(firstError?.reason?.message || "All prompt generations failed");
+    throw new Error(errors[0]?.message || "All prompt generations failed");
   }
 
   return successfulPrompts;

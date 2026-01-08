@@ -29,6 +29,7 @@ export default function PromptGenerator() {
   const [generatedPrompts, setGeneratedPrompts] = useState<string[]>([]);
   const [batchSize, setBatchSize] = useState(3);
   const [isLoading, setIsLoading] = useState(false);
+  const [progress, setProgress] = useState({ completed: 0, total: 0 });
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
@@ -110,6 +111,7 @@ export default function PromptGenerator() {
 
     setIsLoading(true);
     setGeneratedPrompts([]);
+    setProgress({ completed: 0, total: batchSize });
     
     try {
       const results = await generatePromptBatch({
@@ -120,6 +122,9 @@ export default function PromptGenerator() {
         userInput,
         baseUrl: selectedCustomModel?.baseUrl,
         batchSize,
+        onProgress: (completed, total) => {
+          setProgress({ completed, total });
+        },
       });
       
       setGeneratedPrompts(results);
@@ -310,7 +315,7 @@ export default function PromptGenerator() {
                   {isLoading ? (
                     <>
                       <Loader2 className="h-4 w-4 sm:h-5 sm:w-5 animate-spin" />
-                      <span className="text-sm sm:text-base">Generating...</span>
+                      <span className="text-sm sm:text-base">{progress.completed}/{progress.total}</span>
                     </>
                   ) : (
                     <>
@@ -321,6 +326,22 @@ export default function PromptGenerator() {
                 </Button>
               </div>
             </div>
+
+            {/* Progress Bar */}
+            {isLoading && (
+              <div className="mt-4">
+                <div className="flex items-center justify-between text-sm mb-2">
+                  <span className="text-muted-foreground">Generating prompts...</span>
+                  <span className="font-bold text-primary">{progress.completed} / {progress.total}</span>
+                </div>
+                <div className="h-3 bg-muted rounded-full border-2 border-border overflow-hidden">
+                  <div 
+                    className="h-full bg-primary transition-all duration-300 ease-out"
+                    style={{ width: `${(progress.completed / progress.total) * 100}%` }}
+                  />
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
