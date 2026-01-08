@@ -1,7 +1,13 @@
 import { useState } from "react";
-import { Clock, Star, Trash2, Copy, Check, ChevronDown, ChevronUp, X } from "lucide-react";
+import { Clock, Star, Trash2, Copy, Check, ChevronDown, ChevronUp, X, Download, FileJson, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { PromptHistoryItem } from "@/hooks/usePromptHistory";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -86,6 +92,97 @@ export function PromptHistoryPanel({
     return date.toLocaleDateString();
   };
 
+  const exportAsJSON = (exportFavoritesOnly: boolean) => {
+    const dataToExport = exportFavoritesOnly
+      ? history.filter((item) => item.isFavorite)
+      : history;
+
+    if (dataToExport.length === 0) {
+      toast({
+        title: "Nothing to export",
+        description: exportFavoritesOnly ? "No favorites to export" : "No prompts to export",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const exportData = dataToExport.map((item) => ({
+      type: promptTypeLabels[item.promptType] || item.promptType,
+      input: item.userInput,
+      prompt: item.generatedPrompt,
+      createdAt: new Date(item.createdAt).toISOString(),
+      isFavorite: item.isFavorite || false,
+    }));
+
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `promptgen-${exportFavoritesOnly ? "favorites" : "all"}-${new Date().toISOString().split("T")[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: "✨ Exported!",
+      description: `${dataToExport.length} prompt(s) exported as JSON`,
+    });
+  };
+
+  const exportAsTXT = (exportFavoritesOnly: boolean) => {
+    const dataToExport = exportFavoritesOnly
+      ? history.filter((item) => item.isFavorite)
+      : history;
+
+    if (dataToExport.length === 0) {
+      toast({
+        title: "Nothing to export",
+        description: exportFavoritesOnly ? "No favorites to export" : "No prompts to export",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const txtContent = dataToExport
+      .map((item, index) => {
+        const divider = "═".repeat(50);
+        return `${divider}
+PROMPT #${index + 1}${item.isFavorite ? " ⭐ FAVORITE" : ""}
+${divider}
+Type: ${promptTypeLabels[item.promptType] || item.promptType}
+Date: ${new Date(item.createdAt).toLocaleString()}
+
+📝 INPUT:
+${item.userInput}
+
+✨ GENERATED PROMPT:
+${item.generatedPrompt}
+`;
+      })
+      .join("\n\n");
+
+    const header = `PROMPTGEN EXPORT
+Generated: ${new Date().toLocaleString()}
+Total Prompts: ${dataToExport.length}
+${"═".repeat(50)}\n\n`;
+
+    const blob = new Blob([header + txtContent], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `promptgen-${exportFavoritesOnly ? "favorites" : "all"}-${new Date().toISOString().split("T")[0]}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: "✨ Exported!",
+      description: `${dataToExport.length} prompt(s) exported as TXT`,
+    });
+  };
+
   if (history.length === 0) {
     return null;
   }
@@ -113,7 +210,7 @@ export function PromptHistoryPanel({
 
       {isOpen && (
         <CardContent className="space-y-4">
-          {/* Filters */}
+          {/* Filters & Actions */}
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <div className="flex gap-2">
               <Button
@@ -125,6 +222,34 @@ export function PromptHistoryPanel({
                 <Star className={cn("h-4 w-4", showFavoritesOnly && "fill-current")} />
                 Favorites
               </Button>
+              
+              {/* Export Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-1">
+                    <Download className="h-4 w-4" />
+                    Export
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-48">
+                  <DropdownMenuItem onClick={() => exportAsJSON(false)} className="gap-2 cursor-pointer">
+                    <FileJson className="h-4 w-4" />
+                    All as JSON
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => exportAsTXT(false)} className="gap-2 cursor-pointer">
+                    <FileText className="h-4 w-4" />
+                    All as TXT
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => exportAsJSON(true)} className="gap-2 cursor-pointer">
+                    <Star className="h-4 w-4" />
+                    Favorites as JSON
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => exportAsTXT(true)} className="gap-2 cursor-pointer">
+                    <Star className="h-4 w-4" />
+                    Favorites as TXT
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
             <Button
               variant="outline"
