@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Sparkles, Copy, Check, AlertCircle, Loader2, Star, Upload, Layers, RefreshCw } from "lucide-react";
+import { Sparkles, Copy, Check, AlertCircle, Loader2, Star, Upload, Layers, RefreshCw, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -219,6 +219,28 @@ export default function PromptGenerator() {
     }
   };
 
+  const handleExportTxt = () => {
+    const content = `Generate By: Mirava Studio.
+==========================
+
+${generatedPrompts.join('\n')}`;
+    
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `prompts-${promptType}-${Date.now()}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    toast({
+      title: "📄 Exported!",
+      description: `${generatedPrompts.length} prompts saved to file`,
+    });
+  };
+
   const handleUsePrompt = (item: PromptHistoryItem) => {
     setPromptType(item.promptType);
     setUserInput(item.userInput);
@@ -401,15 +423,26 @@ export default function PromptGenerator() {
                   <span className="w-7 h-7 sm:w-8 sm:h-8 bg-quaternary rounded-full border-2 border-foreground flex items-center justify-center text-xs sm:text-sm text-quaternary-foreground font-bold">2</span>
                   <span>Generated Prompts ({generatedPrompts.length})</span>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleCopyAll}
-                  className="gap-1.5 text-xs"
-                >
-                  <Copy className="h-3.5 w-3.5" />
-                  Copy All
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleExportTxt}
+                    className="gap-1.5 text-xs"
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                    Export TXT
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCopyAll}
+                    className="gap-1.5 text-xs"
+                  >
+                    <Copy className="h-3.5 w-3.5" />
+                    Copy All
+                  </Button>
+                </div>
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-0 space-y-3">
