@@ -378,9 +378,15 @@ ${generatedPrompts.join('\n')}`;
               </div>
               
               <div className="flex items-center gap-2">
-                <span className="px-3 py-2 bg-quaternary text-quaternary-foreground rounded-full border-2 border-foreground font-bold text-xs whitespace-nowrap">
-                  Total: {batchSize} prompt{batchSize > 1 ? 's' : ''}
-                </span>
+                {(() => {
+                  const ideaCount = userInput.split('\n').filter(line => line.trim()).length || 1;
+                  const totalPrompts = batchSize * ideaCount;
+                  return (
+                    <span className="px-3 py-2 bg-quaternary text-quaternary-foreground rounded-full border-2 border-foreground font-bold text-xs whitespace-nowrap">
+                      Total: {totalPrompts} prompt{totalPrompts > 1 ? 's' : ''}
+                    </span>
+                  );
+                })()}
                 
                 <Button
                   onClick={handleGenerate}
