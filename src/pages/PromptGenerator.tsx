@@ -293,7 +293,7 @@ export default function PromptGenerator() {
                     const val = parseInt(e.target.value) || 1;
                     setBatchSize(Math.max(val, 1));
                   }}
-                  className="w-20 h-10 px-3 text-center text-base font-bold rounded-xl border-2 border-foreground bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-24 h-10 px-3 text-center text-base font-bold rounded-xl border-2 border-foreground bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
               
