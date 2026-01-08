@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Sparkles, Copy, Check, AlertCircle, Loader2, Star, Upload, Layers, RefreshCw, Download } from "lucide-react";
+import { Sparkles, Copy, Check, AlertCircle, Loader2, Star, Upload, Layers, RefreshCw, Download, Flame } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,6 +28,7 @@ export default function PromptGenerator() {
   const [userInput, setUserInput] = useState("");
   const [generatedPrompts, setGeneratedPrompts] = useState<string[]>([]);
   const [batchSize, setBatchSize] = useState(3);
+  const [creativity, setCreativity] = useState(3);
   const [isLoading, setIsLoading] = useState(false);
   const [regeneratingIndex, setRegeneratingIndex] = useState<number | null>(null);
   const [progress, setProgress] = useState({ completed: 0, total: 0 });
@@ -123,6 +124,7 @@ export default function PromptGenerator() {
         userInput,
         baseUrl: selectedCustomModel?.baseUrl,
         batchSize,
+        creativity,
         onProgress: (completed, total) => {
           setProgress({ completed, total });
         },
@@ -190,6 +192,7 @@ export default function PromptGenerator() {
         promptType,
         userInput,
         baseUrl: selectedCustomModel?.baseUrl,
+        creativity,
       });
       
       setGeneratedPrompts(prev => {
@@ -358,23 +361,47 @@ ${generatedPrompts.join('\n')}`;
               )}
             </div>
 
-            {/* Prompt Count Input */}
+            {/* Prompt Count & Creativity */}
             <div className="mt-4 flex flex-col gap-4">
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <Layers className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm font-medium">Jumlah prompt per idea:</span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Prompt Count */}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <Layers className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-medium">Jumlah prompt:</span>
+                  </div>
+                  <input
+                    type="number"
+                    min={1}
+                    value={batchSize}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value) || 1;
+                      setBatchSize(Math.max(val, 1));
+                    }}
+                    className="w-16 h-9 px-2 text-center text-sm font-bold rounded-xl border-2 border-border-strong bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
                 </div>
-                <input
-                  type="number"
-                  min={1}
-                  value={batchSize}
-                  onChange={(e) => {
-                    const val = parseInt(e.target.value) || 1;
-                    setBatchSize(Math.max(val, 1));
-                  }}
-                  className="w-16 h-9 px-2 text-center text-sm font-bold rounded-xl border-2 border-border-strong bg-background focus:outline-none focus:ring-2 focus:ring-primary"
-                />
+
+                {/* Creativity Slider */}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <Flame className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-medium">Kreativitas:</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="range"
+                      min={1}
+                      max={5}
+                      value={creativity}
+                      onChange={(e) => setCreativity(parseInt(e.target.value))}
+                      className="w-20 sm:w-24 h-2 accent-primary cursor-pointer"
+                    />
+                    <span className="w-6 h-6 flex items-center justify-center text-xs font-bold bg-primary text-primary-foreground rounded-full border-2 border-border-strong">
+                      {creativity}
+                    </span>
+                  </div>
+                </div>
               </div>
               
               <div className="flex items-center gap-2">
