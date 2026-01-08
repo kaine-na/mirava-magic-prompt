@@ -220,7 +220,7 @@ export default function PromptGenerator() {
         )}
 
         {/* Current Prompt Type & Model Badge */}
-        <div className="mb-4 sm:mb-6 flex flex-wrap items-center gap-2">
+        <div className="mb-4 sm:mb-6 flex flex-wrap items-center justify-center sm:justify-start gap-2">
           <span className="text-xs sm:text-sm text-muted-foreground">Selected:</span>
           <span className="px-2.5 py-1 sm:px-3 sm:py-1.5 bg-primary text-primary-foreground rounded-full border-2 border-foreground font-semibold text-xs sm:text-sm shadow-hard-sm">
             {promptTypeLabels[promptType] || promptType}
