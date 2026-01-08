@@ -1,60 +1,18 @@
 import { useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { 
-  Settings, Menu, X, Zap, ChevronDown, ChevronRight,
-  Image, Video, Box, Music, Palette,
-  Share2, Megaphone, Mail,
-  MessageSquare, Code, FileText, Wand2
+  Settings, Menu, X, Zap,
+  Image, Video, Box, Music, Palette, Wand2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-interface PromptCategory {
-  title: string;
-  icon: React.ElementType;
-  color: string;
-  items: {
-    id: string;
-    title: string;
-    icon: React.ElementType;
-    color: string;
-  }[];
-}
-
-const promptCategories: PromptCategory[] = [
-  {
-    title: "Generative AI",
-    icon: Wand2,
-    color: "bg-primary",
-    items: [
-      { id: "image", title: "Image", icon: Image, color: "bg-primary" },
-      { id: "video", title: "Video", icon: Video, color: "bg-secondary" },
-      { id: "3d", title: "3D Model", icon: Box, color: "bg-quaternary" },
-      { id: "music", title: "Music", icon: Music, color: "bg-tertiary" },
-      { id: "art", title: "Art Style", icon: Palette, color: "bg-quaternary" },
-    ],
-  },
-  {
-    title: "Social & Marketing",
-    icon: Share2,
-    color: "bg-secondary",
-    items: [
-      { id: "social", title: "Social Media", icon: Share2, color: "bg-tertiary" },
-      { id: "marketing", title: "Marketing", icon: Megaphone, color: "bg-secondary" },
-      { id: "email", title: "Email", icon: Mail, color: "bg-tertiary" },
-    ],
-  },
-  {
-    title: "Text & Code",
-    icon: Code,
-    color: "bg-quaternary",
-    items: [
-      { id: "chat", title: "Chat/System", icon: MessageSquare, color: "bg-primary" },
-      { id: "code", title: "Code", icon: Code, color: "bg-quaternary" },
-      { id: "writing", title: "Writing", icon: FileText, color: "bg-primary" },
-      { id: "custom", title: "Custom", icon: Wand2, color: "bg-secondary" },
-    ],
-  },
+const promptTypes = [
+  { id: "image", title: "Image", icon: Image, color: "bg-primary" },
+  { id: "video", title: "Video", icon: Video, color: "bg-secondary" },
+  { id: "3d", title: "3D Model", icon: Box, color: "bg-quaternary" },
+  { id: "music", title: "Music", icon: Music, color: "bg-tertiary" },
+  { id: "art", title: "Art Style", icon: Palette, color: "bg-quaternary" },
 ];
 
 interface AppSidebarProps {
@@ -64,17 +22,8 @@ interface AppSidebarProps {
 
 export function AppSidebar({ selectedPromptType, onSelectPromptType }: AppSidebarProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [expandedCategories, setExpandedCategories] = useState<string[]>(["Generative AI"]);
   const location = useLocation();
   const navigate = useNavigate();
-
-  const toggleCategory = (category: string) => {
-    setExpandedCategories((prev) =>
-      prev.includes(category)
-        ? prev.filter((c) => c !== category)
-        : [...prev, category]
-    );
-  };
 
   const handleSelectPromptType = (typeId: string) => {
     if (onSelectPromptType) {
@@ -129,79 +78,37 @@ export function AppSidebar({ selectedPromptType, onSelectPromptType }: AppSideba
             </div>
           </div>
 
-          {/* Prompt Categories */}
+          {/* Prompt Types */}
           <div className="space-y-1.5">
             <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-3 mb-2">
-              Prompt Types
+              Generative AI
             </p>
             
-            {promptCategories.map((category) => {
-              const isExpanded = expandedCategories.includes(category.title);
-              const hasActiveItem = category.items.some((item) => item.id === selectedPromptType);
-              
+            {promptTypes.map((item) => {
+              const isActive = selectedPromptType === item.id;
               return (
-                <div key={category.title}>
-                  {/* Category Header */}
-                  <button
-                    onClick={() => toggleCategory(category.title)}
+                <button
+                  key={item.id}
+                  onClick={() => handleSelectPromptType(item.id)}
+                  className={cn(
+                    "w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl border-2 transition-all duration-200",
+                    isActive
+                      ? "border-foreground bg-card shadow-hard-sm"
+                      : "border-transparent hover:bg-muted/50"
+                  )}
+                >
+                  <div
                     className={cn(
-                      "w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl border-2 transition-all duration-200",
-                      hasActiveItem
-                        ? "border-foreground bg-muted shadow-hard-sm"
-                        : "border-transparent hover:bg-muted/50"
+                      "w-7 h-7 rounded-full border-2 border-foreground flex items-center justify-center flex-shrink-0",
+                      item.color
                     )}
                   >
-                    <div
-                      className={cn(
-                        "w-7 h-7 rounded-full border-2 border-foreground flex items-center justify-center flex-shrink-0",
-                        category.color
-                      )}
-                    >
-                      <category.icon className="h-3.5 w-3.5 text-primary-foreground" strokeWidth={2.5} />
-                    </div>
-                    <span className="flex-1 text-left font-semibold text-sm truncate">{category.title}</span>
-                    <div className="flex-shrink-0">
-                      {isExpanded ? (
-                        <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                      ) : (
-                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                      )}
-                    </div>
-                  </button>
-
-                  {/* Category Items */}
-                  {isExpanded && (
-                    <div className="ml-5 mt-1 space-y-0.5 border-l-2 border-border pl-3 py-1">
-                      {category.items.map((item) => {
-                        const isActive = selectedPromptType === item.id;
-                        return (
-                          <button
-                            key={item.id}
-                            onClick={() => handleSelectPromptType(item.id)}
-                            className={cn(
-                              "w-full flex items-center gap-2 px-2.5 py-2 rounded-lg transition-all duration-200",
-                              isActive
-                                ? "bg-card border-2 border-foreground shadow-hard-sm"
-                                : "hover:bg-muted border-2 border-transparent"
-                            )}
-                          >
-                            <div
-                              className={cn(
-                                "w-5 h-5 rounded-full border-2 border-foreground flex items-center justify-center flex-shrink-0",
-                                item.color
-                              )}
-                            >
-                              <item.icon className="h-2.5 w-2.5 text-primary-foreground" strokeWidth={3} />
-                            </div>
-                            <span className={cn("text-sm truncate", isActive ? "font-semibold" : "font-medium")}>
-                              {item.title}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
+                    <item.icon className="h-3.5 w-3.5 text-primary-foreground" strokeWidth={2.5} />
+                  </div>
+                  <span className={cn("text-sm truncate", isActive ? "font-semibold" : "font-medium")}>
+                    {item.title}
+                  </span>
+                </button>
               );
             })}
 
