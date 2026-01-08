@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { 
   Settings, Zap, PanelLeftClose, PanelLeft,
-  Image, Video, Box, Music, Palette
+  Image, Video, Box, Palette
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -12,8 +12,7 @@ const promptTypes = [
   { id: "image", title: "Image", icon: Image, color: "bg-primary" },
   { id: "video", title: "Video", icon: Video, color: "bg-secondary" },
   { id: "3d", title: "3D Model", icon: Box, color: "bg-quaternary" },
-  { id: "music", title: "Music", icon: Music, color: "bg-tertiary" },
-  { id: "art", title: "Art Style", icon: Palette, color: "bg-quaternary" },
+  { id: "art", title: "Art Style", icon: Palette, color: "bg-tertiary" },
 ];
 
 interface AppSidebarProps {
