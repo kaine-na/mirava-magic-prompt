@@ -1,11 +1,10 @@
-import { useState } from "react";
-import { Sparkles, Copy, Check, AlertCircle, Loader2, Star } from "lucide-react";
+import { useState, useRef } from "react";
+import { Sparkles, Copy, Check, AlertCircle, Loader2, Star, Upload, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { DecorativeShapes } from "@/components/prompt/DecorativeShapes";
-import { PromptTypeSelector } from "@/components/prompt/PromptTypeSelector";
 import { PromptHistoryPanel } from "@/components/prompt/PromptHistoryPanel";
 import { useApiKey } from "@/hooks/useApiKey";
 import { usePromptHistory, PromptHistoryItem } from "@/hooks/usePromptHistory";
@@ -14,6 +13,21 @@ import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
+const promptTypeLabels: Record<string, string> = {
+  image: "Image",
+  video: "Video",
+  social: "Social Media",
+  "3d": "3D Model",
+  chat: "Chat/System",
+  code: "Code",
+  music: "Music",
+  writing: "Writing",
+  marketing: "Marketing",
+  email: "Email",
+  art: "Art Style",
+  custom: "Custom",
+};
+
 export default function PromptGenerator() {
   const [promptType, setPromptType] = useState("image");
   const [userInput, setUserInput] = useState("");
@@ -21,10 +35,50 @@ export default function PromptGenerator() {
   const [isLoading, setIsLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const { apiKey, provider, hasApiKey } = useApiKey();
   const { history, addToHistory, removeFromHistory, toggleFavorite, clearHistory } = usePromptHistory();
   const { toast } = useToast();
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.name.endsWith('.txt')) {
+      toast({
+        title: "Invalid file type",
+        description: "Please upload a .txt file",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const content = e.target?.result as string;
+      if (content) {
+        setUserInput(content.trim());
+        toast({
+          title: "📄 File loaded!",
+          description: `Loaded ${file.name}`,
+        });
+      }
+    };
+    reader.onerror = () => {
+      toast({
+        title: "Error reading file",
+        description: "Could not read the file",
+        variant: "destructive",
+      });
+    };
+    reader.readAsText(file);
+    
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
 
   const handleGenerate = async () => {
     if (!userInput.trim()) {
@@ -101,7 +155,10 @@ export default function PromptGenerator() {
   };
 
   return (
-    <MainLayout>
+    <MainLayout 
+      selectedPromptType={promptType} 
+      onSelectPromptType={setPromptType}
+    >
       <div className="relative max-w-4xl mx-auto">
         <DecorativeShapes />
         
@@ -139,20 +196,45 @@ export default function PromptGenerator() {
           </Card>
         )}
 
-        {/* Prompt Type Selection */}
-        <div className="mb-8 animate-pop-in" style={{ animationDelay: "100ms" }}>
-          <label className="font-heading font-bold text-sm uppercase tracking-wide mb-3 block">
-            Select Prompt Type
-          </label>
-          <PromptTypeSelector selected={promptType} onSelect={setPromptType} />
+        {/* Current Prompt Type Badge */}
+        <div className="mb-6 animate-pop-in" style={{ animationDelay: "100ms" }}>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">Selected type:</span>
+            <span className="px-3 py-1.5 bg-primary text-primary-foreground rounded-full border-2 border-foreground font-semibold text-sm shadow-hard-sm">
+              {promptTypeLabels[promptType] || promptType}
+            </span>
+            <span className="text-xs text-muted-foreground">← Change in sidebar</span>
+          </div>
         </div>
 
         {/* Input Section */}
         <Card className="mb-6 animate-pop-in hover:translate-x-0 hover:translate-y-0 hover:shadow-hard" style={{ animationDelay: "200ms" }}>
           <CardHeader>
-            <CardTitle className="font-heading text-lg flex items-center gap-2">
-              <span className="w-8 h-8 bg-primary rounded-full border-2 border-foreground flex items-center justify-center text-sm text-primary-foreground font-bold">1</span>
-              Describe Your Idea
+            <CardTitle className="font-heading text-lg flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="w-8 h-8 bg-primary rounded-full border-2 border-foreground flex items-center justify-center text-sm text-primary-foreground font-bold">1</span>
+                Describe Your Idea
+              </div>
+              {/* File Upload Button */}
+              <div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".txt"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                  id="file-upload"
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="gap-2"
+                >
+                  <Upload className="h-4 w-4" />
+                  Load from TXT
+                </Button>
+              </div>
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -160,8 +242,21 @@ export default function PromptGenerator() {
               placeholder="E.g., A cozy coffee shop interior with warm lighting and vintage furniture..."
               value={userInput}
               onChange={(e) => setUserInput(e.target.value)}
-              className="min-h-[120px]"
+              className="min-h-[150px]"
             />
+            <div className="mt-2 flex items-center justify-between">
+              <span className="text-xs text-muted-foreground">
+                {userInput.length} characters
+              </span>
+              {userInput && (
+                <button
+                  onClick={() => setUserInput("")}
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
             <div className="mt-4 flex justify-end">
               <Button
                 onClick={handleGenerate}
