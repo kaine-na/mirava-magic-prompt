@@ -1,15 +1,18 @@
 import { useState } from "react";
-import { Sparkles, Copy, Check, AlertCircle, Loader2 } from "lucide-react";
+import { Sparkles, Copy, Check, AlertCircle, Loader2, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { DecorativeShapes } from "@/components/prompt/DecorativeShapes";
 import { PromptTypeSelector } from "@/components/prompt/PromptTypeSelector";
+import { PromptHistoryPanel } from "@/components/prompt/PromptHistoryPanel";
 import { useApiKey } from "@/hooks/useApiKey";
+import { usePromptHistory, PromptHistoryItem } from "@/hooks/usePromptHistory";
 import { generatePrompt } from "@/lib/generatePrompt";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
+import { cn } from "@/lib/utils";
 
 export default function PromptGenerator() {
   const [promptType, setPromptType] = useState("image");
@@ -17,8 +20,10 @@ export default function PromptGenerator() {
   const [generatedPrompt, setGeneratedPrompt] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
   
   const { apiKey, provider, hasApiKey } = useApiKey();
+  const { history, addToHistory, removeFromHistory, toggleFavorite, clearHistory } = usePromptHistory();
   const { toast } = useToast();
 
   const handleGenerate = async () => {
@@ -41,6 +46,7 @@ export default function PromptGenerator() {
     }
 
     setIsLoading(true);
+    setIsSaved(false);
     try {
       const result = await generatePrompt({
         apiKey,
@@ -49,9 +55,18 @@ export default function PromptGenerator() {
         userInput,
       });
       setGeneratedPrompt(result);
+      
+      // Auto-save to history
+      addToHistory({
+        promptType,
+        userInput,
+        generatedPrompt: result,
+      });
+      setIsSaved(true);
+      
       toast({
         title: "✨ Prompt Generated!",
-        description: "Your magic prompt is ready to use",
+        description: "Your magic prompt is ready and saved to history",
       });
     } catch (error) {
       toast({
@@ -72,6 +87,17 @@ export default function PromptGenerator() {
       description: "Prompt copied to clipboard",
     });
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleUsePrompt = (item: PromptHistoryItem) => {
+    setPromptType(item.promptType);
+    setUserInput(item.userInput);
+    setGeneratedPrompt(item.generatedPrompt);
+    setIsSaved(true);
+    toast({
+      title: "Prompt Loaded",
+      description: "Previous prompt has been loaded",
+    });
   };
 
   return (
@@ -167,24 +193,32 @@ export default function PromptGenerator() {
                   <span className="w-8 h-8 bg-quaternary rounded-full border-2 border-foreground flex items-center justify-center text-sm text-quaternary-foreground font-bold">2</span>
                   Your Generated Prompt
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleCopy}
-                  className="gap-2"
-                >
-                  {copied ? (
-                    <>
-                      <Check className="h-4 w-4" />
-                      Copied!
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="h-4 w-4" />
-                      Copy
-                    </>
+                <div className="flex items-center gap-2">
+                  {isSaved && (
+                    <span className="flex items-center gap-1 text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">
+                      <Star className="h-3 w-3" />
+                      Saved
+                    </span>
                   )}
-                </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCopy}
+                    className="gap-2"
+                  >
+                    {copied ? (
+                      <>
+                        <Check className="h-4 w-4" />
+                        Copied!
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="h-4 w-4" />
+                        Copy
+                      </>
+                    )}
+                  </Button>
+                </div>
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -194,6 +228,15 @@ export default function PromptGenerator() {
             </CardContent>
           </Card>
         )}
+
+        {/* History Panel */}
+        <PromptHistoryPanel
+          history={history}
+          onRemove={removeFromHistory}
+          onToggleFavorite={toggleFavorite}
+          onClear={clearHistory}
+          onUsePrompt={handleUsePrompt}
+        />
       </div>
     </MainLayout>
   );
