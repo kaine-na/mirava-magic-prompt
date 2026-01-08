@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { Image, MessageSquare, Code, Music, FileText, Wand2 } from "lucide-react";
+import { Image, MessageSquare, Code, Music, FileText, Wand2, Video, Share2, Box, Megaphone, Mail, Palette } from "lucide-react";
 
 interface PromptType {
   id: string;
@@ -18,10 +18,31 @@ const promptTypes: PromptType[] = [
     description: "Generate image prompts",
   },
   {
+    id: "video",
+    label: "Video",
+    icon: Video,
+    color: "bg-secondary",
+    description: "Video generation prompts",
+  },
+  {
+    id: "social",
+    label: "Social",
+    icon: Share2,
+    color: "bg-tertiary",
+    description: "Social media posts",
+  },
+  {
+    id: "3d",
+    label: "3D Model",
+    icon: Box,
+    color: "bg-quaternary",
+    description: "3D model prompts",
+  },
+  {
     id: "chat",
     label: "Chat",
     icon: MessageSquare,
-    color: "bg-secondary",
+    color: "bg-primary",
     description: "Conversational AI prompts",
   },
   {
@@ -46,6 +67,27 @@ const promptTypes: PromptType[] = [
     description: "Creative writing prompts",
   },
   {
+    id: "marketing",
+    label: "Marketing",
+    icon: Megaphone,
+    color: "bg-secondary",
+    description: "Ad copy & marketing",
+  },
+  {
+    id: "email",
+    label: "Email",
+    icon: Mail,
+    color: "bg-tertiary",
+    description: "Professional emails",
+  },
+  {
+    id: "art",
+    label: "Art Style",
+    icon: Palette,
+    color: "bg-quaternary",
+    description: "Artistic style transfer",
+  },
+  {
     id: "custom",
     label: "Custom",
     icon: Wand2,
@@ -61,7 +103,7 @@ interface PromptTypeSelectorProps {
 
 export function PromptTypeSelector({ selected, onSelect }: PromptTypeSelectorProps) {
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+    <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-3">
       {promptTypes.map((type, index) => {
         const isSelected = selected === type.id;
         return (
