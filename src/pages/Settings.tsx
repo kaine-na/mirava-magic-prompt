@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
 import { 
   Settings as SettingsIcon, Key, Eye, EyeOff, Trash2, Check, Sparkles, 
-  RefreshCw, Bot, Plus, Save, Sun, Moon, Monitor
+  RefreshCw, Bot, Plus, Save
 } from "lucide-react";
-import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -56,67 +55,6 @@ const providers = [
   },
 ];
 
-const themeOptions = [
-  { value: "light", label: "Light", icon: Sun },
-  { value: "dark", label: "Dark", icon: Moon },
-  { value: "system", label: "System", icon: Monitor },
-];
-
-function ThemeSelector() {
-  const { theme, setTheme } = useTheme();
-  
-  return (
-    <Card className="mb-6 hover:translate-x-0 hover:translate-y-0 hover:shadow-hard">
-      <CardHeader className="pb-3 sm:pb-4">
-        <CardTitle className="font-heading text-base sm:text-lg flex items-center gap-2">
-          <Sun className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={2.5} />
-          Appearance
-        </CardTitle>
-        <CardDescription className="text-xs sm:text-sm">
-          Choose your preferred theme
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="pt-0">
-        <div className="grid grid-cols-3 gap-2 sm:gap-3">
-          {themeOptions.map((option) => {
-            const isSelected = theme === option.value;
-            return (
-              <button
-                key={option.value}
-                onClick={() => setTheme(option.value)}
-                className={cn(
-                  "relative p-3 sm:p-4 rounded-xl sm:rounded-2xl border-2 transition-all duration-200 text-center",
-                  isSelected
-                    ? "border-border-strong bg-card shadow-hard-sm sm:shadow-hard"
-                    : "border-border bg-card/50 hover:border-border-strong hover:shadow-hard-sm"
-                )}
-              >
-                <div className="flex flex-col items-center gap-2">
-                  <div
-                    className={cn(
-                      "w-10 h-10 rounded-full border-2 border-border-strong flex items-center justify-center",
-                      option.value === "light" && "bg-tertiary",
-                      option.value === "dark" && "bg-primary",
-                      option.value === "system" && "bg-muted"
-                    )}
-                  >
-                    <option.icon className="h-5 w-5 text-primary-foreground" strokeWidth={2.5} />
-                  </div>
-                  <span className="font-semibold text-xs sm:text-sm">{option.label}</span>
-                </div>
-                {isSelected && (
-                  <div className="absolute -top-1.5 -right-1.5 sm:-top-2 sm:-right-2 w-5 h-5 sm:w-6 sm:h-6 bg-tertiary rounded-full border-2 border-border-strong flex items-center justify-center">
-                    <Check className="h-2.5 w-2.5 sm:h-3 sm:w-3" strokeWidth={3} />
-                  </div>
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
 
 export default function Settings() {
   const { 
@@ -274,8 +212,6 @@ export default function Settings() {
           </p>
         </div>
 
-        {/* Theme Selection */}
-        <ThemeSelector />
 
         {/* Provider Selection */}
         <Card className="mb-6 hover:translate-x-0 hover:translate-y-0 hover:shadow-hard">
