@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Sparkles, Copy, Check, AlertCircle, Loader2, Star, Upload } from "lucide-react";
+import { Sparkles, Copy, Check, AlertCircle, Loader2, Star, Upload, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,32 +9,27 @@ import { PromptHistoryPanel } from "@/components/prompt/PromptHistoryPanel";
 import { useApiKey } from "@/hooks/useApiKey";
 import { useCustomModels } from "@/hooks/useCustomModels";
 import { usePromptHistory, PromptHistoryItem } from "@/hooks/usePromptHistory";
-import { generatePrompt } from "@/lib/generatePrompt";
+import { generatePromptBatch } from "@/lib/generatePrompt";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
+import { cn } from "@/lib/utils";
 
 const promptTypeLabels: Record<string, string> = {
   image: "Image",
   video: "Video",
-  social: "Social Media",
   "3d": "3D Model",
-  chat: "Chat/System",
-  code: "Code",
-  music: "Music",
-  writing: "Writing",
-  marketing: "Marketing",
-  email: "Email",
   art: "Art Style",
-  custom: "Custom",
 };
+
+const batchOptions = [1, 2, 3, 4, 5];
 
 export default function PromptGenerator() {
   const [promptType, setPromptType] = useState("image");
   const [userInput, setUserInput] = useState("");
-  const [generatedPrompt, setGeneratedPrompt] = useState("");
+  const [generatedPrompts, setGeneratedPrompts] = useState<string[]>([]);
+  const [batchSize, setBatchSize] = useState(3);
   const [isLoading, setIsLoading] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [isSaved, setIsSaved] = useState(false);
+  const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const { provider, model, selectedCustomModelId, currentApiKey, hasApiKey } = useApiKey();
@@ -42,12 +37,10 @@ export default function PromptGenerator() {
   const { history, addToHistory, removeFromHistory, toggleFavorite, clearHistory } = usePromptHistory();
   const { toast } = useToast();
 
-  // Get custom model config if using custom provider
   const selectedCustomModel = provider === "custom" 
     ? customModels.find(m => m.id === selectedCustomModelId) 
     : undefined;
 
-  // Determine API key to use
   const apiKeyToUse = provider === "custom" 
     ? selectedCustomModel?.apiKey || "" 
     : currentApiKey;
@@ -100,7 +93,6 @@ export default function PromptGenerator() {
       return;
     }
 
-    // Check if we have a valid API key
     const hasValidKey = provider === "custom" 
       ? !!selectedCustomModel?.apiKey 
       : !!apiKeyToUse;
@@ -117,28 +109,33 @@ export default function PromptGenerator() {
     }
 
     setIsLoading(true);
-    setIsSaved(false);
+    setGeneratedPrompts([]);
+    
     try {
-      const result = await generatePrompt({
+      const results = await generatePromptBatch({
         apiKey: apiKeyToUse,
         provider,
         model: provider === "custom" ? selectedCustomModel?.modelId || "" : model,
         promptType,
         userInput,
         baseUrl: selectedCustomModel?.baseUrl,
+        batchSize,
       });
-      setGeneratedPrompt(result);
       
-      addToHistory({
-        promptType,
-        userInput,
-        generatedPrompt: result,
+      setGeneratedPrompts(results);
+      
+      // Save all to history
+      results.forEach((prompt) => {
+        addToHistory({
+          promptType,
+          userInput,
+          generatedPrompt: prompt,
+        });
       });
-      setIsSaved(true);
       
       toast({
-        title: "✨ Prompt Generated!",
-        description: "Your magic prompt is ready and saved to history",
+        title: `✨ ${results.length} Prompt${results.length > 1 ? 's' : ''} Generated!`,
+        description: "Your magic prompts are ready and saved to history",
       });
     } catch (error) {
       toast({
@@ -151,21 +148,29 @@ export default function PromptGenerator() {
     }
   };
 
-  const handleCopy = async () => {
-    await navigator.clipboard.writeText(generatedPrompt);
-    setCopied(true);
+  const handleCopy = async (prompt: string, index: number) => {
+    await navigator.clipboard.writeText(prompt);
+    setCopiedIndex(index);
     toast({
       title: "Copied!",
-      description: "Prompt copied to clipboard",
+      description: `Prompt #${index + 1} copied to clipboard`,
     });
-    setTimeout(() => setCopied(false), 2000);
+    setTimeout(() => setCopiedIndex(null), 2000);
+  };
+
+  const handleCopyAll = async () => {
+    const allPrompts = generatedPrompts.map((p, i) => `#${i + 1}: ${p}`).join("\n\n");
+    await navigator.clipboard.writeText(allPrompts);
+    toast({
+      title: "All Copied!",
+      description: `${generatedPrompts.length} prompts copied to clipboard`,
+    });
   };
 
   const handleUsePrompt = (item: PromptHistoryItem) => {
     setPromptType(item.promptType);
     setUserInput(item.userInput);
-    setGeneratedPrompt(item.generatedPrompt);
-    setIsSaved(true);
+    setGeneratedPrompts([item.generatedPrompt]);
     toast({
       title: "Prompt Loaded",
       description: "Previous prompt has been loaded",
@@ -190,7 +195,7 @@ export default function PromptGenerator() {
             Create <span className="text-primary">Magic</span> Prompts
           </h1>
           <p className="text-muted-foreground text-sm sm:text-base lg:text-lg max-w-xl mx-auto px-4">
-            Transform your ideas into powerful prompts for any generative AI
+            Generate multiple unique prompt variations in parallel
           </p>
         </div>
 
@@ -225,7 +230,6 @@ export default function PromptGenerator() {
               Model: {provider === "custom" ? selectedCustomModel?.name || "Not set" : model || "Not set"}
             </span>
           )}
-          <span className="text-[10px] sm:text-xs text-muted-foreground hidden sm:inline">← Change in sidebar</span>
         </div>
 
         {/* Input Section */}
@@ -275,21 +279,44 @@ export default function PromptGenerator() {
                 </button>
               )}
             </div>
-            <div className="mt-4 flex justify-end">
+
+            {/* Batch Size Selector */}
+            <div className="mt-4 flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:justify-between">
+              <div className="flex items-center gap-2">
+                <Layers className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium">Batch Size:</span>
+                <div className="flex gap-1">
+                  {batchOptions.map((size) => (
+                    <button
+                      key={size}
+                      onClick={() => setBatchSize(size)}
+                      className={cn(
+                        "w-8 h-8 rounded-lg border-2 text-sm font-bold transition-all",
+                        batchSize === size
+                          ? "bg-primary text-primary-foreground border-foreground shadow-hard-sm"
+                          : "bg-muted text-muted-foreground border-border hover:border-foreground"
+                      )}
+                    >
+                      {size}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              
               <Button
                 onClick={handleGenerate}
                 disabled={isLoading || !hasApiKey}
-                className="w-full sm:w-auto min-w-[140px] sm:min-w-[160px]"
+                className="w-full sm:w-auto min-w-[160px]"
               >
                 {isLoading ? (
                   <>
                     <Loader2 className="h-4 w-4 sm:h-5 sm:w-5 animate-spin" />
-                    <span className="text-sm sm:text-base">Generating...</span>
+                    <span className="text-sm sm:text-base">Generating {batchSize}...</span>
                   </>
                 ) : (
                   <>
                     <Sparkles className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={2.5} />
-                    <span className="text-sm sm:text-base">Generate</span>
+                    <span className="text-sm sm:text-base">Generate {batchSize}</span>
                   </>
                 )}
               </Button>
@@ -297,47 +324,58 @@ export default function PromptGenerator() {
           </CardContent>
         </Card>
 
-        {/* Output Section */}
-        {generatedPrompt && (
+        {/* Output Section - Multiple Prompts */}
+        {generatedPrompts.length > 0 && (
           <Card className="border-quaternary shadow-quaternary hover:translate-x-0 hover:translate-y-0">
             <CardHeader className="pb-3 sm:pb-4">
               <CardTitle className="font-heading text-base sm:text-lg flex flex-col sm:flex-row sm:items-center gap-2 sm:justify-between">
                 <div className="flex items-center gap-2">
                   <span className="w-7 h-7 sm:w-8 sm:h-8 bg-quaternary rounded-full border-2 border-foreground flex items-center justify-center text-xs sm:text-sm text-quaternary-foreground font-bold">2</span>
-                  <span>Generated Prompt</span>
+                  <span>Generated Prompts ({generatedPrompts.length})</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  {isSaved && (
-                    <span className="flex items-center gap-1 text-[10px] sm:text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">
-                      <Star className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                      Saved
-                    </span>
-                  )}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleCopy}
-                    className="gap-1.5 text-xs"
-                  >
-                    {copied ? (
-                      <>
-                        <Check className="h-3.5 w-3.5" />
-                        Copied!
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="h-3.5 w-3.5" />
-                        Copy
-                      </>
-                    )}
-                  </Button>
-                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCopyAll}
+                  className="gap-1.5 text-xs"
+                >
+                  <Copy className="h-3.5 w-3.5" />
+                  Copy All
+                </Button>
               </CardTitle>
             </CardHeader>
-            <CardContent className="pt-0">
-              <div className="bg-muted rounded-xl p-3 sm:p-4 border-2 border-border">
-                <p className="whitespace-pre-wrap text-xs sm:text-sm leading-relaxed">{generatedPrompt}</p>
-              </div>
+            <CardContent className="pt-0 space-y-3">
+              {generatedPrompts.map((prompt, index) => (
+                <div 
+                  key={index} 
+                  className="bg-muted rounded-xl p-3 sm:p-4 border-2 border-border relative group"
+                >
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <span className="px-2 py-0.5 bg-primary/10 text-primary rounded-full text-xs font-semibold border border-primary/20">
+                      #{index + 1}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleCopy(prompt, index)}
+                      className="h-7 px-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      {copiedIndex === index ? (
+                        <>
+                          <Check className="h-3.5 w-3.5 mr-1" />
+                          <span className="text-xs">Copied!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="h-3.5 w-3.5 mr-1" />
+                          <span className="text-xs">Copy</span>
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                  <p className="whitespace-pre-wrap text-xs sm:text-sm leading-relaxed">{prompt}</p>
+                </div>
+              ))}
             </CardContent>
           </Card>
         )}
