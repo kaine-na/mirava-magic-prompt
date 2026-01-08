@@ -61,44 +61,52 @@ export function AppSidebar({ selectedPromptType, onSelectPromptType }: AppSideba
         animate={{ width: isOpen ? 260 : 64 }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
       >
-        <div className="flex flex-col h-full px-3 py-4">
+        <div className="flex flex-col h-full py-4">
           {/* Header */}
-          <div className="flex items-center justify-between mb-6">
-            <Link to="/" className="flex items-center gap-2.5 min-w-0">
-              <div className="relative flex-shrink-0">
-                <div className="w-9 h-9 bg-tertiary rounded-full border-2 border-foreground shadow-hard-sm flex items-center justify-center">
-                  <Zap className="h-4 w-4 text-tertiary-foreground" strokeWidth={2.5} />
-                </div>
-                <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-secondary rounded-full border-2 border-foreground" />
-              </div>
-              <AnimatePresence>
-                {isOpen && (
+          <div className={cn(
+            "flex items-center mb-6",
+            isOpen ? "px-3 justify-between" : "justify-center"
+          )}>
+            {isOpen ? (
+              <>
+                <Link to="/" className="flex items-center gap-2.5 min-w-0">
+                  <div className="relative flex-shrink-0">
+                    <div className="w-10 h-10 bg-tertiary rounded-full border-2 border-foreground shadow-hard-sm flex items-center justify-center">
+                      <Zap className="h-5 w-5 text-tertiary-foreground" strokeWidth={2.5} />
+                    </div>
+                    <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-secondary rounded-full border-2 border-foreground" />
+                  </div>
                   <motion.h1
-                    initial={{ opacity: 0, width: 0 }}
-                    animate={{ opacity: 1, width: "auto" }}
-                    exit={{ opacity: 0, width: 0 }}
-                    className="font-heading font-bold text-base whitespace-nowrap overflow-hidden"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="font-heading font-bold text-base whitespace-nowrap"
                   >
                     PromptGen
                   </motion.h1>
-                )}
-              </AnimatePresence>
-            </Link>
-            
-            <button
-              onClick={toggleSidebar}
-              className="p-1.5 rounded-lg transition-all duration-200 hover:bg-muted text-muted-foreground hover:text-foreground flex-shrink-0"
-            >
-              {isOpen ? (
-                <PanelLeftClose className="h-5 w-5" strokeWidth={2} />
-              ) : (
+                </Link>
+                
+                <button
+                  onClick={toggleSidebar}
+                  className="p-1.5 rounded-lg transition-all duration-200 hover:bg-muted text-muted-foreground hover:text-foreground flex-shrink-0"
+                >
+                  <PanelLeftClose className="h-5 w-5" strokeWidth={2} />
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={toggleSidebar}
+                className="p-2 rounded-lg transition-all duration-200 hover:bg-muted text-muted-foreground hover:text-foreground"
+              >
                 <PanelLeft className="h-5 w-5" strokeWidth={2} />
-              )}
-            </button>
+              </button>
+            )}
           </div>
 
           {/* Menu Items */}
-          <nav className="flex-1 flex flex-col gap-1">
+          <nav className={cn(
+            "flex-1 flex flex-col gap-1",
+            isOpen ? "px-3" : "items-center"
+          )}>
             <AnimatePresence>
               {isOpen && (
                 <motion.span
@@ -119,7 +127,8 @@ export function AppSidebar({ selectedPromptType, onSelectPromptType }: AppSideba
                   key={item.id}
                   onClick={() => handleSelectPromptType(item.id)}
                   className={cn(
-                    "flex items-center gap-3 py-2.5 px-2 rounded-xl transition-all duration-200 w-full",
+                    "flex items-center rounded-xl transition-all duration-200",
+                    isOpen ? "gap-3 py-2.5 px-2 w-full" : "p-2 justify-center",
                     isActive ? "bg-muted" : "hover:bg-muted/50"
                   )}
                 >
@@ -128,11 +137,11 @@ export function AppSidebar({ selectedPromptType, onSelectPromptType }: AppSideba
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.95 }}
                       className={cn(
-                        "w-9 h-9 rounded-full border-2 border-foreground flex items-center justify-center",
+                        "w-10 h-10 rounded-full border-2 border-foreground flex items-center justify-center",
                         item.color
                       )}
                     >
-                      <item.icon className="h-4 w-4 text-primary-foreground" strokeWidth={2.5} />
+                      <item.icon className="h-5 w-5 text-primary-foreground" strokeWidth={2.5} />
                     </motion.div>
                     <AnimatePresence>
                       {isActive && (
@@ -172,21 +181,25 @@ export function AppSidebar({ selectedPromptType, onSelectPromptType }: AppSideba
               );
             })}
 
-            <div className="my-3 border-t border-border" />
+            <div className={cn(
+              "my-3 border-t border-border",
+              isOpen ? "" : "w-10"
+            )} />
 
             <Link
               to="/settings"
               className={cn(
-                "flex items-center gap-3 py-2.5 px-2 rounded-xl transition-all duration-200 w-full",
+                "flex items-center rounded-xl transition-all duration-200",
+                isOpen ? "gap-3 py-2.5 px-2 w-full" : "p-2 justify-center",
                 isSettingsActive ? "bg-muted" : "hover:bg-muted/50"
               )}
             >
               <motion.div 
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
-                className="w-9 h-9 rounded-full border-2 border-foreground bg-muted flex items-center justify-center flex-shrink-0"
+                className="w-10 h-10 rounded-full border-2 border-foreground bg-muted flex items-center justify-center flex-shrink-0"
               >
-                <Settings className="h-4 w-4" strokeWidth={2.5} />
+                <Settings className="h-5 w-5" strokeWidth={2.5} />
               </motion.div>
               <AnimatePresence>
                 {isOpen && (
