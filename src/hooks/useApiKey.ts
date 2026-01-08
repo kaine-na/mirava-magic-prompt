@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 const API_KEY_STORAGE_KEY = "promptgen_api_key";
 const API_PROVIDER_STORAGE_KEY = "promptgen_api_provider";
 const API_MODEL_STORAGE_KEY = "promptgen_api_model";
-const API_BASE_URL_STORAGE_KEY = "promptgen_api_base_url";
+const SELECTED_CUSTOM_MODEL_KEY = "promptgen_selected_custom_model";
 
 export type ApiProvider = "openai" | "gemini" | "openrouter" | "groq" | "custom";
 
@@ -30,18 +30,18 @@ export function useApiKey() {
   const [apiKey, setApiKeyState] = useState<string>("");
   const [provider, setProviderState] = useState<ApiProvider>("openai");
   const [model, setModelState] = useState<string>("");
-  const [baseUrl, setBaseUrlState] = useState<string>("");
+  const [selectedCustomModelId, setSelectedCustomModelIdState] = useState<string>("");
 
   useEffect(() => {
     const storedKey = localStorage.getItem(API_KEY_STORAGE_KEY);
     const storedProvider = localStorage.getItem(API_PROVIDER_STORAGE_KEY) as ApiProvider;
     const storedModel = localStorage.getItem(API_MODEL_STORAGE_KEY);
-    const storedBaseUrl = localStorage.getItem(API_BASE_URL_STORAGE_KEY);
+    const storedCustomModelId = localStorage.getItem(SELECTED_CUSTOM_MODEL_KEY);
     
     if (storedKey) setApiKeyState(storedKey);
     if (storedProvider) setProviderState(storedProvider);
     if (storedModel) setModelState(storedModel);
-    if (storedBaseUrl) setBaseUrlState(storedBaseUrl);
+    if (storedCustomModelId) setSelectedCustomModelIdState(storedCustomModelId);
   }, []);
 
   const setApiKey = (key: string) => {
@@ -52,9 +52,11 @@ export function useApiKey() {
   const setProvider = (prov: ApiProvider) => {
     setProviderState(prov);
     localStorage.setItem(API_PROVIDER_STORAGE_KEY, prov);
-    // Clear model when provider changes
-    setModelState("");
-    localStorage.removeItem(API_MODEL_STORAGE_KEY);
+    // Clear model when provider changes (except for custom)
+    if (prov !== "custom") {
+      setModelState("");
+      localStorage.removeItem(API_MODEL_STORAGE_KEY);
+    }
   };
 
   const setModel = (mod: string) => {
@@ -62,9 +64,9 @@ export function useApiKey() {
     localStorage.setItem(API_MODEL_STORAGE_KEY, mod);
   };
 
-  const setBaseUrl = (url: string) => {
-    setBaseUrlState(url);
-    localStorage.setItem(API_BASE_URL_STORAGE_KEY, url);
+  const setSelectedCustomModelId = (id: string) => {
+    setSelectedCustomModelIdState(id);
+    localStorage.setItem(SELECTED_CUSTOM_MODEL_KEY, id);
   };
 
   const clearApiKey = () => {
@@ -80,11 +82,11 @@ export function useApiKey() {
     apiKey,
     provider,
     model,
-    baseUrl,
+    selectedCustomModelId,
     setApiKey,
     setProvider,
     setModel,
-    setBaseUrl,
+    setSelectedCustomModelId,
     clearApiKey,
     hasApiKey,
   };
