@@ -188,65 +188,66 @@ ${"═".repeat(50)}\n\n`;
   }
 
   return (
-    <Card className="mt-6 animate-pop-in hover:translate-x-0 hover:translate-y-0 hover:shadow-hard">
-      <CardHeader className="cursor-pointer" onClick={() => setIsOpen(!isOpen)}>
-        <CardTitle className="font-heading text-lg flex items-center justify-between">
+    <Card className="mt-6 hover:translate-x-0 hover:translate-y-0 hover:shadow-hard">
+      <CardHeader className="cursor-pointer pb-3 sm:pb-4" onClick={() => setIsOpen(!isOpen)}>
+        <CardTitle className="font-heading text-base sm:text-lg flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Clock className="h-5 w-5" strokeWidth={2.5} />
-            Prompt History
-            <span className="text-sm font-normal text-muted-foreground">
-              ({history.length} prompts)
+            <Clock className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={2.5} />
+            <span>History</span>
+            <span className="text-xs sm:text-sm font-normal text-muted-foreground">
+              ({history.length})
             </span>
           </div>
           <div className="flex items-center gap-2">
             {isOpen ? (
-              <ChevronUp className="h-5 w-5" />
+              <ChevronUp className="h-4 w-4 sm:h-5 sm:w-5" />
             ) : (
-              <ChevronDown className="h-5 w-5" />
+              <ChevronDown className="h-4 w-4 sm:h-5 sm:w-5" />
             )}
           </div>
         </CardTitle>
       </CardHeader>
 
       {isOpen && (
-        <CardContent className="space-y-4">
+        <CardContent className="pt-0 space-y-3 sm:space-y-4">
           {/* Filters & Actions */}
           <div className="flex items-center justify-between gap-2 flex-wrap">
-            <div className="flex gap-2">
+            <div className="flex gap-1.5 sm:gap-2">
               <Button
                 variant={showFavoritesOnly ? "default" : "outline"}
                 size="sm"
                 onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
-                className="gap-1"
+                className="gap-1 text-xs sm:text-sm h-8 sm:h-9 px-2 sm:px-3"
               >
-                <Star className={cn("h-4 w-4", showFavoritesOnly && "fill-current")} />
-                Favorites
+                <Star className={cn("h-3 w-3 sm:h-4 sm:w-4", showFavoritesOnly && "fill-current")} />
+                <span className="hidden sm:inline">Favorites</span>
+                <span className="sm:hidden">Fav</span>
               </Button>
               
               {/* Export Dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="gap-1">
-                    <Download className="h-4 w-4" />
-                    Export
+                  <Button variant="outline" size="sm" className="gap-1 text-xs sm:text-sm h-8 sm:h-9 px-2 sm:px-3">
+                    <Download className="h-3 w-3 sm:h-4 sm:w-4" />
+                    <span className="hidden sm:inline">Export</span>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-48">
-                  <DropdownMenuItem onClick={() => exportAsJSON(false)} className="gap-2 cursor-pointer">
-                    <FileJson className="h-4 w-4" />
+                <DropdownMenuContent align="start" className="w-44 sm:w-48">
+                  <DropdownMenuItem onClick={() => exportAsJSON(false)} className="gap-2 cursor-pointer text-xs sm:text-sm">
+                    <FileJson className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                     All as JSON
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => exportAsTXT(false)} className="gap-2 cursor-pointer">
-                    <FileText className="h-4 w-4" />
+                  <DropdownMenuItem onClick={() => exportAsTXT(false)} className="gap-2 cursor-pointer text-xs sm:text-sm">
+                    <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                     All as TXT
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => exportAsJSON(true)} className="gap-2 cursor-pointer">
-                    <Star className="h-4 w-4" />
-                    Favorites as JSON
+                  <DropdownMenuItem onClick={() => exportAsJSON(true)} className="gap-2 cursor-pointer text-xs sm:text-sm">
+                    <Star className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                    Favorites JSON
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => exportAsTXT(true)} className="gap-2 cursor-pointer">
-                    <Star className="h-4 w-4" />
-                    Favorites as TXT
+                  <DropdownMenuItem onClick={() => exportAsTXT(true)} className="gap-2 cursor-pointer text-xs sm:text-sm">
+                    <Star className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                    Favorites TXT
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -255,52 +256,52 @@ ${"═".repeat(50)}\n\n`;
               variant="outline"
               size="sm"
               onClick={onClear}
-              className="gap-1 text-destructive hover:text-destructive"
+              className="gap-1 text-destructive hover:text-destructive text-xs sm:text-sm h-8 sm:h-9 px-2 sm:px-3"
             >
-              <Trash2 className="h-4 w-4" />
-              Clear All
+              <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Clear All</span>
+              <span className="sm:hidden">Clear</span>
             </Button>
           </div>
 
           {/* History List */}
-          <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
+          <div className="space-y-2 sm:space-y-3 max-h-[350px] sm:max-h-[400px] overflow-y-auto pr-1 sm:pr-2">
             {filteredHistory.length === 0 ? (
-              <p className="text-center text-muted-foreground py-4">
+              <p className="text-center text-muted-foreground py-4 text-sm">
                 No {showFavoritesOnly ? "favorites" : "history"} yet
               </p>
             ) : (
-              filteredHistory.map((item, index) => (
+              filteredHistory.map((item) => (
                 <div
                   key={item.id}
                   className={cn(
-                    "p-4 rounded-xl border-2 border-border bg-muted/50 transition-all animate-pop-in",
+                    "p-3 sm:p-4 rounded-lg sm:rounded-xl border-2 border-border bg-muted/50 transition-all",
                     expandedId === item.id && "border-primary shadow-primary"
                   )}
-                  style={{ animationDelay: `${index * 30}ms` }}
                 >
                   {/* Header */}
                   <div className="flex items-start justify-between gap-2 mb-2">
-                    <div className="flex items-center gap-2 flex-wrap">
+                    <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
                       <span
                         className={cn(
-                          "px-2 py-1 rounded-full text-xs font-semibold text-primary-foreground border-2 border-foreground",
+                          "px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-semibold text-primary-foreground border-2 border-foreground",
                           promptTypeColors[item.promptType]
                         )}
                       >
                         {promptTypeLabels[item.promptType] || item.promptType}
                       </span>
-                      <span className="text-xs text-muted-foreground">
+                      <span className="text-[10px] sm:text-xs text-muted-foreground">
                         {formatDate(item.createdAt)}
                       </span>
                     </div>
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-0.5 sm:gap-1">
                       <button
                         onClick={() => onToggleFavorite(item.id)}
-                        className="p-1.5 rounded-lg hover:bg-accent transition-colors"
+                        className="p-1 sm:p-1.5 rounded-lg hover:bg-accent transition-colors"
                       >
                         <Star
                           className={cn(
-                            "h-4 w-4",
+                            "h-3.5 w-3.5 sm:h-4 sm:w-4",
                             item.isFavorite
                               ? "fill-tertiary text-tertiary"
                               : "text-muted-foreground"
@@ -309,46 +310,46 @@ ${"═".repeat(50)}\n\n`;
                       </button>
                       <button
                         onClick={() => onRemove(item.id)}
-                        className="p-1.5 rounded-lg hover:bg-destructive/10 transition-colors text-muted-foreground hover:text-destructive"
+                        className="p-1 sm:p-1.5 rounded-lg hover:bg-destructive/10 transition-colors text-muted-foreground hover:text-destructive"
                       >
-                        <X className="h-4 w-4" />
+                        <X className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                       </button>
                     </div>
                   </div>
 
                   {/* User Input Preview */}
-                  <p className="text-sm font-medium mb-2 line-clamp-2">{item.userInput}</p>
+                  <p className="text-xs sm:text-sm font-medium mb-2 line-clamp-2">{item.userInput}</p>
 
                   {/* Expand/Collapse */}
                   <button
                     onClick={() => setExpandedId(expandedId === item.id ? null : item.id)}
-                    className="text-xs text-primary font-semibold hover:underline"
+                    className="text-[10px] sm:text-xs text-primary font-semibold hover:underline"
                   >
                     {expandedId === item.id ? "Show less" : "Show prompt →"}
                   </button>
 
                   {/* Expanded Content */}
                   {expandedId === item.id && (
-                    <div className="mt-3 pt-3 border-t border-border space-y-3 animate-pop-in">
-                      <div className="bg-card rounded-lg p-3 border-2 border-border">
-                        <p className="text-sm whitespace-pre-wrap">{item.generatedPrompt}</p>
+                    <div className="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-border space-y-2 sm:space-y-3">
+                      <div className="bg-card rounded-lg p-2 sm:p-3 border-2 border-border">
+                        <p className="text-xs sm:text-sm whitespace-pre-wrap">{item.generatedPrompt}</p>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex gap-1.5 sm:gap-2">
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => handleCopy(item.generatedPrompt, item.id)}
-                          className="gap-1"
+                          className="gap-1 text-xs h-8 px-2 sm:px-3"
                         >
                           {copiedId === item.id ? (
                             <>
-                              <Check className="h-4 w-4" />
-                              Copied!
+                              <Check className="h-3 w-3 sm:h-4 sm:w-4" />
+                              <span className="hidden sm:inline">Copied!</span>
                             </>
                           ) : (
                             <>
-                              <Copy className="h-4 w-4" />
-                              Copy
+                              <Copy className="h-3 w-3 sm:h-4 sm:w-4" />
+                              <span>Copy</span>
                             </>
                           )}
                         </Button>
@@ -356,7 +357,7 @@ ${"═".repeat(50)}\n\n`;
                           variant="tertiary"
                           size="sm"
                           onClick={() => onUsePrompt(item)}
-                          className="gap-1"
+                          className="gap-1 text-xs h-8 px-2 sm:px-3"
                         >
                           Use Again
                         </Button>
