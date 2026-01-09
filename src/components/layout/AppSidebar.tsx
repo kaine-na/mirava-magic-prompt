@@ -21,6 +21,9 @@ const mainMenus = [
       { id: "image-anime", title: "Anime" },
       { id: "image-3d", title: "3D Render" },
       { id: "image-painting", title: "Painting" },
+      { id: "image-photography", title: "Photography" },
+      { id: "image-illustration", title: "Illustration" },
+      { id: "image-pixel-art", title: "Pixel Art" },
     ]
   },
   { 
