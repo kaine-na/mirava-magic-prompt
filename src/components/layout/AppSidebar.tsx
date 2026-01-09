@@ -2,13 +2,13 @@ import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { 
   Settings, Zap, PanelLeftClose, PanelLeft,
-  Image, Video, Box, Palette
+  Image, Video, Box, Palette, ChevronDown, Sparkles
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useClickSound } from "@/hooks/useClickSound";
 
-const promptTypes = [
+const generativeAITypes = [
   { id: "image", title: "Image", icon: Image, color: "bg-primary" },
   { id: "video", title: "Video", icon: Video, color: "bg-secondary" },
   { id: "3d", title: "3D Model", icon: Box, color: "bg-quaternary" },
@@ -25,6 +25,7 @@ export function AppSidebar({ selectedPromptType, onSelectPromptType }: AppSideba
     const saved = localStorage.getItem("sidebar-open");
     return saved !== "false";
   });
+  const [isGenAIOpen, setIsGenAIOpen] = useState(true);
   
   const location = useLocation();
   const navigate = useNavigate();
@@ -141,79 +142,132 @@ export function AppSidebar({ selectedPromptType, onSelectPromptType }: AppSideba
               isOpen ? "" : "w-10"
             )} />
 
-            <AnimatePresence>
-              {isOpen && (
-                <motion.span
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="text-xs font-bold text-muted-foreground uppercase tracking-wider px-2 mb-2"
-                >
-                  Generative AI
-                </motion.span>
-              )}
-            </AnimatePresence>
-            
-            {promptTypes.map((item) => {
-              const isActive = selectedPromptType === item.id;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => handleSelectPromptType(item.id)}
-                  className={cn(
-                    "flex items-center rounded-xl transition-all duration-200",
-                    isOpen ? "gap-3 py-2.5 px-2 w-full" : "p-2 justify-center",
-                    isActive ? "bg-muted" : "hover:bg-muted/50"
-                  )}
-                >
-                  <div className="relative flex-shrink-0">
-                    <motion.div
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.95 }}
-                      className={cn(
-                        "w-10 h-10 rounded-full border-2 border-border-strong flex items-center justify-center",
-                        item.color
-                      )}
-                    >
-                      <item.icon className="h-5 w-5 text-primary-foreground" strokeWidth={2.5} />
-                    </motion.div>
-                    <AnimatePresence>
-                      {isActive && (
-                        <>
-                          <motion.div
-                            initial={{ scale: 0 }}
-                            animate={{ scale: [1, 1.6], opacity: [0.6, 0] }}
-                            transition={{ duration: 1.2, repeat: Infinity }}
-                            className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-secondary rounded-full"
-                          />
-                          <motion.div
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            exit={{ scale: 0 }}
-                            className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-secondary rounded-full border-2 border-border-strong"
-                          />
-                        </>
-                      )}
-                    </AnimatePresence>
-                  </div>
+            {/* Generative AI - Main Menu */}
+            <div>
+              <button
+                onClick={() => {
+                  playClick();
+                  if (isOpen) setIsGenAIOpen(!isGenAIOpen);
+                }}
+                className={cn(
+                  "flex items-center rounded-xl transition-all duration-200 w-full",
+                  isOpen ? "gap-3 py-2.5 px-2 justify-between" : "p-2 justify-center"
+                )}
+              >
+                <div className="flex items-center gap-3">
+                  <motion.div
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="w-10 h-10 rounded-full border-2 border-border-strong bg-primary flex items-center justify-center flex-shrink-0"
+                  >
+                    <Sparkles className="h-5 w-5 text-primary-foreground" strokeWidth={2.5} />
+                  </motion.div>
                   <AnimatePresence>
                     {isOpen && (
                       <motion.span
                         initial={{ opacity: 0, x: -10 }}
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: -10 }}
-                        className={cn(
-                          "text-base whitespace-nowrap",
-                          isActive ? "font-semibold" : "font-medium"
-                        )}
+                        className="font-semibold text-base whitespace-nowrap"
                       >
-                        {item.title}
+                        Generative AI
                       </motion.span>
                     )}
                   </AnimatePresence>
-                </button>
-              );
-            })}
+                </div>
+                <AnimatePresence>
+                  {isOpen && (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                    >
+                      <ChevronDown 
+                        className={cn(
+                          "h-4 w-4 text-muted-foreground transition-transform duration-200",
+                          isGenAIOpen && "rotate-180"
+                        )} 
+                      />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </button>
+              
+              {/* Sub Menu Items */}
+              <AnimatePresence>
+                {(isOpen ? isGenAIOpen : true) && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className={cn("overflow-hidden", isOpen ? "ml-4 mt-1" : "")}
+                  >
+                    {generativeAITypes.map((item) => {
+                      const isActive = selectedPromptType === item.id;
+                      return (
+                        <button
+                          key={item.id}
+                          onClick={() => handleSelectPromptType(item.id)}
+                          className={cn(
+                            "flex items-center rounded-xl transition-all duration-200",
+                            isOpen ? "gap-3 py-2 px-2 w-full" : "p-2 justify-center my-1",
+                            isActive ? "bg-muted" : "hover:bg-muted/50"
+                          )}
+                        >
+                          <div className="relative flex-shrink-0">
+                            <motion.div
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.95 }}
+                              className={cn(
+                                "rounded-full border-2 border-border-strong flex items-center justify-center",
+                                isOpen ? "w-8 h-8" : "w-10 h-10",
+                                item.color
+                              )}
+                            >
+                              <item.icon className={cn("text-primary-foreground", isOpen ? "h-4 w-4" : "h-5 w-5")} strokeWidth={2.5} />
+                            </motion.div>
+                            <AnimatePresence>
+                              {isActive && (
+                                <>
+                                  <motion.div
+                                    initial={{ scale: 0 }}
+                                    animate={{ scale: [1, 1.6], opacity: [0.6, 0] }}
+                                    transition={{ duration: 1.2, repeat: Infinity }}
+                                    className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-secondary rounded-full"
+                                  />
+                                  <motion.div
+                                    initial={{ scale: 0 }}
+                                    animate={{ scale: 1 }}
+                                    exit={{ scale: 0 }}
+                                    className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-secondary rounded-full border-2 border-border-strong"
+                                  />
+                                </>
+                              )}
+                            </AnimatePresence>
+                          </div>
+                          <AnimatePresence>
+                            {isOpen && (
+                              <motion.span
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -10 }}
+                                className={cn(
+                                  "text-sm whitespace-nowrap",
+                                  isActive ? "font-semibold" : "font-medium"
+                                )}
+                              >
+                                {item.title}
+                              </motion.span>
+                            )}
+                          </AnimatePresence>
+                        </button>
+                      );
+                    })}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </nav>
 
           <AnimatePresence>
@@ -304,11 +358,17 @@ function MobileSidebar({
 
                 <div className="my-3 border-t border-border" />
 
-                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider px-1 mb-2">
-                  Generative AI
-                </span>
+                {/* Generative AI Header */}
+                <div className="flex items-center gap-2 py-2 px-1">
+                  <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center">
+                    <Sparkles className="h-3.5 w-3.5 text-primary-foreground" strokeWidth={2.5} />
+                  </div>
+                  <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                    Generative AI
+                  </span>
+                </div>
                 
-                {promptTypes.map((item) => {
+                {generativeAITypes.map((item) => {
                   const isActive = selectedPromptType === item.id;
                   return (
                     <button
@@ -318,17 +378,17 @@ function MobileSidebar({
                         setIsOpen(false);
                       }}
                       className={cn(
-                        "flex items-center gap-3 py-2.5 px-2 rounded-xl transition-all duration-200",
+                        "flex items-center gap-3 py-2 px-2 ml-3 rounded-xl transition-all duration-200",
                         isActive ? "bg-muted" : "hover:bg-muted/50"
                       )}
                     >
                       <div className={cn(
-                        "w-9 h-9 rounded-full border-2 border-border-strong flex items-center justify-center",
+                        "w-8 h-8 rounded-full border-2 border-border-strong flex items-center justify-center",
                         item.color
                       )}>
                         <item.icon className="h-4 w-4 text-primary-foreground" strokeWidth={2.5} />
                       </div>
-                      <span className={cn("text-base", isActive ? "font-semibold" : "font-medium")}>
+                      <span className={cn("text-sm", isActive ? "font-semibold" : "font-medium")}>
                         {item.title}
                       </span>
                     </button>
