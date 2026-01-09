@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { 
   Settings, Zap, PanelLeftClose, PanelLeft,
-  Image, Video, ChevronDown, Sparkles, Circle
+  Image, Video, ChevronDown, Sparkles
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -141,7 +141,7 @@ export function AppSidebar({ selectedPromptType, onSelectPromptType }: AppSideba
 
           {/* Menu Items */}
           <nav className={cn(
-            "flex-1 flex flex-col gap-1",
+            "flex-1 flex flex-col gap-1 overflow-y-auto",
             isOpen ? "px-3" : "items-center"
           )}>
             {/* Settings at top */}
@@ -149,16 +149,16 @@ export function AppSidebar({ selectedPromptType, onSelectPromptType }: AppSideba
               to="/settings"
               className={cn(
                 "flex items-center rounded-xl transition-all duration-200",
-                isOpen ? "gap-3 py-2.5 px-2 w-full" : "p-2 justify-center",
+                isOpen ? "gap-3 py-2 px-3 w-full" : "p-2 justify-center",
                 isSettingsActive ? "bg-muted" : "hover:bg-muted/50"
               )}
             >
               <motion.div 
-                whileHover={{ scale: 1.1 }}
+                whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="w-10 h-10 rounded-full border-2 border-border-strong bg-muted flex items-center justify-center flex-shrink-0"
+                className="w-9 h-9 rounded-full border-2 border-border-strong bg-muted flex items-center justify-center flex-shrink-0"
               >
-                <Settings className="h-5 w-5" strokeWidth={2.5} />
+                <Settings className="h-4 w-4" strokeWidth={2.5} />
               </motion.div>
               <AnimatePresence>
                 {isOpen && (
@@ -166,7 +166,7 @@ export function AppSidebar({ selectedPromptType, onSelectPromptType }: AppSideba
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -10 }}
-                    className="font-semibold text-base whitespace-nowrap"
+                    className="font-semibold text-sm whitespace-nowrap"
                   >
                     Settings
                   </motion.span>
@@ -175,8 +175,8 @@ export function AppSidebar({ selectedPromptType, onSelectPromptType }: AppSideba
             </Link>
 
             <div className={cn(
-              "my-3 border-t border-border",
-              isOpen ? "" : "w-10"
+              "my-2 border-t border-border",
+              isOpen ? "" : "w-8"
             )} />
 
             {/* Generative AI Label */}
@@ -186,10 +186,10 @@ export function AppSidebar({ selectedPromptType, onSelectPromptType }: AppSideba
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  className="flex items-center gap-2 px-2 mb-2"
+                  className="flex items-center gap-2 px-3 mb-1"
                 >
-                  <Sparkles className="h-4 w-4 text-primary" strokeWidth={2.5} />
-                  <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                  <Sparkles className="h-3.5 w-3.5 text-primary" strokeWidth={2.5} />
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                     Generative AI
                   </span>
                 </motion.div>
@@ -202,26 +202,26 @@ export function AppSidebar({ selectedPromptType, onSelectPromptType }: AppSideba
               const hasActiveChild = menu.styles.some(s => selectedPromptType === s.id);
               
               return (
-                <div key={menu.id}>
+                <div key={menu.id} className="mb-1">
                   {/* Main Menu Button */}
                   <button
                     onClick={() => isOpen && toggleMenu(menu.id)}
                     className={cn(
                       "flex items-center rounded-xl transition-all duration-200 w-full",
-                      isOpen ? "gap-3 py-2.5 px-2 justify-between" : "p-2 justify-center",
-                      hasActiveChild && "bg-muted/50"
+                      isOpen ? "gap-3 py-2 px-3 justify-between hover:bg-muted/30" : "p-2 justify-center",
+                      hasActiveChild && "bg-muted/40"
                     )}
                   >
                     <div className="flex items-center gap-3">
                       <motion.div
-                        whileHover={{ scale: 1.1 }}
+                        whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                         className={cn(
-                          "w-10 h-10 rounded-full border-2 border-border-strong flex items-center justify-center flex-shrink-0",
+                          "w-9 h-9 rounded-full border-2 border-border-strong flex items-center justify-center flex-shrink-0",
                           menu.color
                         )}
                       >
-                        <menu.icon className="h-5 w-5 text-primary-foreground" strokeWidth={2.5} />
+                        <menu.icon className="h-4 w-4 text-primary-foreground" strokeWidth={2.5} />
                       </motion.div>
                       <AnimatePresence>
                         {isOpen && (
@@ -229,7 +229,7 @@ export function AppSidebar({ selectedPromptType, onSelectPromptType }: AppSideba
                             initial={{ opacity: 0, x: -10 }}
                             animate={{ opacity: 1, x: 0 }}
                             exit={{ opacity: 0, x: -10 }}
-                            className="font-semibold text-base whitespace-nowrap"
+                            className="font-semibold text-sm whitespace-nowrap"
                           >
                             {menu.title}
                           </motion.span>
@@ -262,7 +262,7 @@ export function AppSidebar({ selectedPromptType, onSelectPromptType }: AppSideba
                         animate={{ height: "auto", opacity: 1 }}
                         exit={{ height: 0, opacity: 0 }}
                         transition={{ duration: 0.2 }}
-                        className="overflow-hidden ml-6 mt-1 space-y-0.5"
+                        className="overflow-hidden pl-[22px] mt-1 border-l-2 border-border ml-[18px]"
                       >
                         {menu.styles.map((style) => {
                           const isActive = selectedPromptType === style.id;
@@ -271,16 +271,16 @@ export function AppSidebar({ selectedPromptType, onSelectPromptType }: AppSideba
                               key={style.id}
                               onClick={() => handleSelectPromptType(style.id)}
                               className={cn(
-                                "flex items-center gap-2 py-1.5 px-2 w-full rounded-lg transition-all duration-200",
-                                isActive ? "bg-muted font-semibold" : "hover:bg-muted/50 font-medium"
+                                "flex items-center gap-2 py-1.5 px-3 w-full rounded-lg transition-all duration-200 text-left",
+                                isActive 
+                                  ? "bg-primary/10 text-primary font-semibold" 
+                                  : "hover:bg-muted/50 text-muted-foreground hover:text-foreground"
                               )}
                             >
-                              <Circle 
-                                className={cn(
-                                  "h-2 w-2 flex-shrink-0",
-                                  isActive ? "fill-current text-primary" : "text-muted-foreground"
-                                )} 
-                              />
+                              <span className={cn(
+                                "w-1.5 h-1.5 rounded-full flex-shrink-0",
+                                isActive ? "bg-primary" : "bg-muted-foreground/50"
+                              )} />
                               <span className="text-sm">{style.title}</span>
                             </button>
                           );
@@ -391,8 +391,8 @@ function MobileSidebar({
                 
                 {/* Image & Video Menus */}
                 {mainMenus.map((menu) => (
-                  <div key={menu.id} className="mb-2">
-                    <div className="flex items-center gap-2 py-2 px-2">
+                  <div key={menu.id} className="mb-1">
+                    <div className="flex items-center gap-2 py-1.5 px-2">
                       <div className={cn(
                         "w-8 h-8 rounded-full border-2 border-border-strong flex items-center justify-center",
                         menu.color
@@ -401,7 +401,7 @@ function MobileSidebar({
                       </div>
                       <span className="font-semibold text-sm">{menu.title}</span>
                     </div>
-                    <div className="ml-5 space-y-0.5">
+                    <div className="pl-5 border-l-2 border-border ml-4">
                       {menu.styles.map((style) => {
                         const isActive = selectedPromptType === style.id;
                         return (
@@ -412,16 +412,16 @@ function MobileSidebar({
                               setIsOpen(false);
                             }}
                             className={cn(
-                              "flex items-center gap-2 py-1.5 px-2 w-full rounded-lg transition-all duration-200",
-                              isActive ? "bg-muted font-semibold" : "hover:bg-muted/50 font-medium"
+                              "flex items-center gap-2 py-1.5 px-3 w-full rounded-lg transition-all duration-200 text-left",
+                              isActive 
+                                ? "bg-primary/10 text-primary font-semibold" 
+                                : "hover:bg-muted/50 text-muted-foreground hover:text-foreground"
                             )}
                           >
-                            <Circle 
-                              className={cn(
-                                "h-2 w-2 flex-shrink-0",
-                                isActive ? "fill-current text-primary" : "text-muted-foreground"
-                              )} 
-                            />
+                            <span className={cn(
+                              "w-1.5 h-1.5 rounded-full flex-shrink-0",
+                              isActive ? "bg-primary" : "bg-muted-foreground/50"
+                            )} />
                             <span className="text-sm">{style.title}</span>
                           </button>
                         );
