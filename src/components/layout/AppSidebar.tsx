@@ -2,7 +2,11 @@ import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { 
   Settings, Zap, PanelLeftClose, PanelLeft,
-  Image, Video, ChevronDown, Sparkles
+  Image, Video, ChevronDown, Sparkles,
+  // Image style icons
+  Layers, Eye, Star, Box, Palette, Camera, PenTool, Grid3X3,
+  // Video style icons
+  Clapperboard, Film, Play, Clock, FileText, Music, Timer
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -16,14 +20,14 @@ const mainMenus = [
     icon: Image, 
     color: "bg-primary",
     styles: [
-      { id: "image-general", title: "General" },
-      { id: "image-realistic", title: "Realistic" },
-      { id: "image-anime", title: "Anime" },
-      { id: "image-3d", title: "3D Render" },
-      { id: "image-painting", title: "Painting" },
-      { id: "image-photography", title: "Photography" },
-      { id: "image-illustration", title: "Illustration" },
-      { id: "image-pixel-art", title: "Pixel Art" },
+      { id: "image-general", title: "General", icon: Layers },
+      { id: "image-realistic", title: "Realistic", icon: Eye },
+      { id: "image-anime", title: "Anime", icon: Star },
+      { id: "image-3d", title: "3D Render", icon: Box },
+      { id: "image-painting", title: "Painting", icon: Palette },
+      { id: "image-photography", title: "Photography", icon: Camera },
+      { id: "image-illustration", title: "Illustration", icon: PenTool },
+      { id: "image-pixel-art", title: "Pixel Art", icon: Grid3X3 },
     ]
   },
   { 
@@ -32,13 +36,13 @@ const mainMenus = [
     icon: Video, 
     color: "bg-secondary",
     styles: [
-      { id: "video-general", title: "General" },
-      { id: "video-cinematic", title: "Cinematic" },
-      { id: "video-animation", title: "Animation" },
-      { id: "video-slow-motion", title: "Slow Motion" },
-      { id: "video-documentary", title: "Documentary" },
-      { id: "video-music-video", title: "Music Video" },
-      { id: "video-timelapse", title: "Time-lapse" },
+      { id: "video-general", title: "General", icon: Clapperboard },
+      { id: "video-cinematic", title: "Cinematic", icon: Film },
+      { id: "video-animation", title: "Animation", icon: Play },
+      { id: "video-slow-motion", title: "Slow Motion", icon: Clock },
+      { id: "video-documentary", title: "Documentary", icon: FileText },
+      { id: "video-music-video", title: "Music Video", icon: Music },
+      { id: "video-timelapse", title: "Time-lapse", icon: Timer },
     ]
   },
 ];
@@ -266,21 +270,29 @@ export function AppSidebar({ selectedPromptType, onSelectPromptType }: AppSideba
                       >
                         {menu.styles.map((style) => {
                           const isActive = selectedPromptType === style.id;
+                          const StyleIcon = style.icon;
                           return (
                             <button
                               key={style.id}
                               onClick={() => handleSelectPromptType(style.id)}
                               className={cn(
-                                "flex items-center gap-2 py-1.5 px-3 w-full rounded-lg transition-all duration-200 text-left",
+                                "flex items-center gap-2.5 py-1.5 px-2 w-full rounded-lg transition-all duration-200 text-left",
                                 isActive 
                                   ? "bg-primary/10 text-primary font-semibold" 
                                   : "hover:bg-muted/50 text-muted-foreground hover:text-foreground"
                               )}
                             >
-                              <span className={cn(
-                                "w-1.5 h-1.5 rounded-full flex-shrink-0",
-                                isActive ? "bg-primary" : "bg-muted-foreground/50"
-                              )} />
+                              <div className={cn(
+                                "w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0",
+                                isActive 
+                                  ? "bg-primary border-primary" 
+                                  : "bg-muted border-border"
+                              )}>
+                                <StyleIcon className={cn(
+                                  "h-3 w-3",
+                                  isActive ? "text-primary-foreground" : "text-muted-foreground"
+                                )} strokeWidth={2.5} />
+                              </div>
                               <span className="text-sm">{style.title}</span>
                             </button>
                           );
@@ -404,6 +416,7 @@ function MobileSidebar({
                     <div className="pl-5 border-l-2 border-border ml-4">
                       {menu.styles.map((style) => {
                         const isActive = selectedPromptType === style.id;
+                        const StyleIcon = style.icon;
                         return (
                           <button
                             key={style.id}
@@ -412,16 +425,23 @@ function MobileSidebar({
                               setIsOpen(false);
                             }}
                             className={cn(
-                              "flex items-center gap-2 py-1.5 px-3 w-full rounded-lg transition-all duration-200 text-left",
+                              "flex items-center gap-2.5 py-1.5 px-2 w-full rounded-lg transition-all duration-200 text-left",
                               isActive 
                                 ? "bg-primary/10 text-primary font-semibold" 
                                 : "hover:bg-muted/50 text-muted-foreground hover:text-foreground"
                             )}
                           >
-                            <span className={cn(
-                              "w-1.5 h-1.5 rounded-full flex-shrink-0",
-                              isActive ? "bg-primary" : "bg-muted-foreground/50"
-                            )} />
+                            <div className={cn(
+                              "w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0",
+                              isActive 
+                                ? "bg-primary border-primary" 
+                                : "bg-muted border-border"
+                            )}>
+                              <StyleIcon className={cn(
+                                "h-3 w-3",
+                                isActive ? "text-primary-foreground" : "text-muted-foreground"
+                              )} strokeWidth={2.5} />
+                            </div>
                             <span className="text-sm">{style.title}</span>
                           </button>
                         );
