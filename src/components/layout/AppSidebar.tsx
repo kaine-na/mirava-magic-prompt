@@ -36,6 +36,9 @@ const mainMenus = [
       { id: "video-cinematic", title: "Cinematic" },
       { id: "video-animation", title: "Animation" },
       { id: "video-slow-motion", title: "Slow Motion" },
+      { id: "video-documentary", title: "Documentary" },
+      { id: "video-music-video", title: "Music Video" },
+      { id: "video-timelapse", title: "Time-lapse" },
     ]
   },
 ];
