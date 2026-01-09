@@ -276,23 +276,31 @@ export function AppSidebar({ selectedPromptType, onSelectPromptType }: AppSideba
                               key={style.id}
                               onClick={() => handleSelectPromptType(style.id)}
                               className={cn(
-                                "flex items-center gap-2.5 py-1.5 px-2 w-full rounded-lg transition-all duration-200 text-left",
+                                "flex items-center gap-2.5 py-1.5 px-2 w-full rounded-lg transition-all duration-200 text-left group",
                                 isActive 
                                   ? "bg-primary/10 text-primary font-semibold" 
                                   : "hover:bg-muted/50 text-muted-foreground hover:text-foreground"
                               )}
                             >
-                              <div className={cn(
-                                "w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0",
-                                isActive 
-                                  ? "bg-primary border-primary" 
-                                  : "bg-muted border-border"
-                              )}>
+                              <motion.div 
+                                whileHover={{ scale: 1.15, rotate: [0, -10, 10, -5, 0] }}
+                                whileTap={{ scale: 0.9 }}
+                                transition={{ 
+                                  scale: { type: "spring", stiffness: 400, damping: 17 },
+                                  rotate: { duration: 0.4, ease: "easeInOut" }
+                                }}
+                                className={cn(
+                                  "w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 cursor-pointer",
+                                  isActive 
+                                    ? "bg-primary border-primary" 
+                                    : "bg-muted border-border group-hover:border-primary/50 group-hover:bg-primary/10"
+                                )}
+                              >
                                 <StyleIcon className={cn(
-                                  "h-3 w-3",
-                                  isActive ? "text-primary-foreground" : "text-muted-foreground"
+                                  "h-3 w-3 transition-colors duration-200",
+                                  isActive ? "text-primary-foreground" : "text-muted-foreground group-hover:text-primary"
                                 )} strokeWidth={2.5} />
-                              </div>
+                              </motion.div>
                               <span className="text-sm">{style.title}</span>
                             </button>
                           );
@@ -425,23 +433,31 @@ function MobileSidebar({
                               setIsOpen(false);
                             }}
                             className={cn(
-                              "flex items-center gap-2.5 py-1.5 px-2 w-full rounded-lg transition-all duration-200 text-left",
+                              "flex items-center gap-2.5 py-1.5 px-2 w-full rounded-lg transition-all duration-200 text-left group",
                               isActive 
                                 ? "bg-primary/10 text-primary font-semibold" 
                                 : "hover:bg-muted/50 text-muted-foreground hover:text-foreground"
                             )}
                           >
-                            <div className={cn(
-                              "w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0",
-                              isActive 
-                                ? "bg-primary border-primary" 
-                                : "bg-muted border-border"
-                            )}>
+                            <motion.div 
+                              whileHover={{ scale: 1.15, rotate: [0, -10, 10, -5, 0] }}
+                              whileTap={{ scale: 0.9 }}
+                              transition={{ 
+                                scale: { type: "spring", stiffness: 400, damping: 17 },
+                                rotate: { duration: 0.4, ease: "easeInOut" }
+                              }}
+                              className={cn(
+                                "w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 cursor-pointer",
+                                isActive 
+                                  ? "bg-primary border-primary" 
+                                  : "bg-muted border-border group-hover:border-primary/50 group-hover:bg-primary/10"
+                              )}
+                            >
                               <StyleIcon className={cn(
-                                "h-3 w-3",
-                                isActive ? "text-primary-foreground" : "text-muted-foreground"
+                                "h-3 w-3 transition-colors duration-200",
+                                isActive ? "text-primary-foreground" : "text-muted-foreground group-hover:text-primary"
                               )} strokeWidth={2.5} />
-                            </div>
+                            </motion.div>
                             <span className="text-sm">{style.title}</span>
                           </button>
                         );
