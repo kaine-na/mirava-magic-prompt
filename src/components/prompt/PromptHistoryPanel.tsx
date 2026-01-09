@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
 const promptTypeLabels: Record<string, string> = {
+  // Legacy types
   image: "Image",
   video: "Video",
   social: "Social",
@@ -25,9 +26,27 @@ const promptTypeLabels: Record<string, string> = {
   email: "Email",
   art: "Art Style",
   custom: "Custom",
+  // Image styles
+  "image-general": "Image - General",
+  "image-realistic": "Image - Realistic",
+  "image-anime": "Image - Anime",
+  "image-3d": "Image - 3D Render",
+  "image-painting": "Image - Painting",
+  "image-photography": "Image - Photography",
+  "image-illustration": "Image - Illustration",
+  "image-pixel-art": "Image - Pixel Art",
+  // Video styles
+  "video-general": "Video - General",
+  "video-cinematic": "Video - Cinematic",
+  "video-animation": "Video - Animation",
+  "video-slow-motion": "Video - Slow Motion",
+  "video-documentary": "Video - Documentary",
+  "video-music-video": "Video - Music Video",
+  "video-timelapse": "Video - Time-lapse",
 };
 
 const promptTypeColors: Record<string, string> = {
+  // Legacy types
   image: "bg-primary",
   video: "bg-secondary",
   social: "bg-tertiary",
@@ -40,6 +59,23 @@ const promptTypeColors: Record<string, string> = {
   email: "bg-tertiary",
   art: "bg-quaternary",
   custom: "bg-secondary",
+  // Image styles
+  "image-general": "bg-primary",
+  "image-realistic": "bg-primary",
+  "image-anime": "bg-primary",
+  "image-3d": "bg-primary",
+  "image-painting": "bg-primary",
+  "image-photography": "bg-primary",
+  "image-illustration": "bg-primary",
+  "image-pixel-art": "bg-primary",
+  // Video styles
+  "video-general": "bg-secondary",
+  "video-cinematic": "bg-secondary",
+  "video-animation": "bg-secondary",
+  "video-slow-motion": "bg-secondary",
+  "video-documentary": "bg-secondary",
+  "video-music-video": "bg-secondary",
+  "video-timelapse": "bg-secondary",
 };
 
 interface PromptHistoryPanelProps {
