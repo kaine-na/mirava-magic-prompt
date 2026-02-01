@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Sparkles, Copy, Check, AlertCircle, Loader2, Star, Upload, Layers, RefreshCw, Download, Flame, ImageIcon, AlignLeft } from "lucide-react";
+import { Sparkles, Copy, Check, AlertCircle, Loader2, Star, Upload, Layers, RefreshCw, Download, Flame, ImageIcon, AlignLeft, Ruler, Lightbulb } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,10 +9,11 @@ import { PromptHistoryPanel } from "@/components/prompt/PromptHistoryPanel";
 import { useApiKey } from "@/hooks/useApiKey";
 import { useCustomModels } from "@/hooks/useCustomModels";
 import { usePromptHistory, PromptHistoryItem } from "@/hooks/usePromptHistory";
-import { generatePromptBatch, generatePrompt, promptLengthOptions, type PromptLengthOption } from "@/lib/generatePrompt";
+import { generatePromptBatch, generatePrompt, DEFAULT_PROMPT_LENGTH } from "@/lib/generatePrompt";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { Slider } from "@/components/ui/slider";
 
 const promptTypeLabels: Record<string, string> = {
   image: "Image",
@@ -43,7 +44,7 @@ export default function PromptGenerator() {
   const [generatedPrompts, setGeneratedPrompts] = useState<(string | null)[]>([]);
   const [batchSize, setBatchSize] = useState(3);
   const [creativity, setCreativity] = useState(3);
-  const [promptLength, setPromptLength] = useState<PromptLengthOption>("medium");
+  const [promptLength, setPromptLength] = useState<number>(DEFAULT_PROMPT_LENGTH);
   const [backgroundStyle, setBackgroundStyle] = useState<BackgroundStyleId>("none");
   const [isLoading, setIsLoading] = useState(false);
   const [regeneratingIndex, setRegeneratingIndex] = useState<number | null>(null);
@@ -197,7 +198,7 @@ const handleGenerate = async () => {
       setIsLoading(false);
     }
   };
-
+  
   const handleCopy = async (prompt: string, index: number) => {
     await navigator.clipboard.writeText(prompt);
     setCopiedIndex(index);
@@ -217,7 +218,7 @@ const handleCopyAll = async () => {
       description: `${completedPrompts.length} prompts copied to clipboard`,
     });
   };
-
+  
   const handleRegenerate = async (index: number) => {
     const hasValidKey = provider === "custom" 
       ? !!selectedCustomModel?.apiKey 
@@ -289,7 +290,7 @@ ${completedPrompts.join('\n')}`;
       description: `${completedPrompts.length} prompts saved to file`,
     });
   };
-
+  
   const handleUsePrompt = (item: PromptHistoryItem) => {
     setPromptType(item.promptType);
     setUserInput(item.userInput);
@@ -435,12 +436,11 @@ ${completedPrompts.join('\n')}`;
                     <span className="text-sm font-medium">Kreativitas:</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <input
-                      type="range"
+                    <Slider
+                      value={[creativity]}
+                      onValueChange={(values) => setCreativity(parseInt(values[0]))}
                       min={1}
                       max={5}
-                      value={creativity}
-                      onChange={(e) => setCreativity(parseInt(e.target.value))}
                       className="w-20 sm:w-24 h-2 accent-primary cursor-pointer"
                     />
                     <span className="w-6 h-6 flex items-center justify-center text-xs font-bold bg-primary text-primary-foreground rounded-full border-2 border-border-strong">
@@ -452,31 +452,77 @@ ${completedPrompts.join('\n')}`;
 
               {/* Prompt Length Selector */}
               <div className="mt-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <AlignLeft className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm font-medium">Prompt Length:</span>
+                <div className="flex items-center gap-2 mb-3">
+                  <Ruler className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">Prompt Length</span>
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  {(Object.entries(promptLengthOptions) as [PromptLengthOption, typeof promptLengthOptions[PromptLengthOption]][]).map(([key, config]) => (
-                    <button
-                      key={key}
-                      onClick={() => setPromptLength(key)}
-                      className={cn(
-                        "px-3 py-2 text-xs font-medium rounded-lg border-2 transition-all text-left",
-                        promptLength === key
-                          ? "border-primary bg-primary/10 text-primary"
-                          : "border-border bg-background hover:border-primary/50 hover:bg-muted"
-                      )}
-                      title={config.description}
-                    >
-                      <div className="font-semibold">{config.label}</div>
-                      <div className="text-[10px] opacity-70">{config.targetWords} words</div>
-                    </button>
-                  ))}
+                
+                {/* Slider + Input Container */}
+                <div className="bg-muted/50 rounded-xl border-2 border-border p-4">
+                  <div className="flex items-center gap-4">
+                    {/* Slider */}
+                    <div className="flex-1">
+                      <Slider
+                        value={[promptLength]}
+                        onValueChange={(value) => setPromptLength(value[0])}
+                        min={10}
+                        max={500}
+                        step={5}
+                        className="w-full"
+                      />
+                    </div>
+                    
+                    {/* Numeric Input */}
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        min={10}
+                        max={500}
+                        value={promptLength}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value) || DEFAULT_PROMPT_LENGTH;
+                          setPromptLength(Math.max(10, Math.min(500, val)));
+                        }}
+                        className="w-16 h-9 px-2 text-center text-sm font-bold rounded-xl border-2 border-border-strong bg-background focus:outline-none focus:ring-2 focus:ring-primary transition-all"
+                      />
+                      <span className="text-sm text-muted-foreground font-medium">words</span>
+                    </div>
+                  </div>
+                  
+                  {/* Quick Presets */}
+                  <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-border/50">
+                    <span className="text-xs text-muted-foreground">Quick:</span>
+                    {[
+                      { label: "50", value: 50 },
+                      { label: "100", value: 100 },
+                      { label: "200", value: 200 },
+                      { label: "300", value: 300 },
+                      { label: "400", value: 400 },
+                    ].map((preset) => (
+                      <button
+                        key={preset.value}
+                        onClick={() => setPromptLength(preset.value)}
+                        className={cn(
+                          "px-2.5 py-1 text-xs font-medium rounded-lg border transition-all",
+                          promptLength === preset.value
+                            ? "border-primary bg-primary text-primary-foreground"
+                            : "border-border bg-background hover:border-primary/50 hover:bg-muted"
+                        )}
+                      >
+                        {preset.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  {promptLengthOptions[promptLength].description}
-                </p>
+                
+                {/* Tip */}
+                <div className="flex items-start gap-2 mt-3 p-2.5 bg-tertiary/30 rounded-lg border border-tertiary/50">
+                  <Lightbulb className="h-4 w-4 text-tertiary-foreground mt-0.5 flex-shrink-0" />
+                  <p className="text-xs text-muted-foreground">
+                    <span className="font-medium text-foreground">Tip:</span>{" "}
+                    50-100 words for Midjourney, 150+ for DALL-E 3, 200+ for detailed Flux scenes
+                  </p>
+                </div>
               </div>
 
               {/* Background Style Selector - Show for image/video/3d/art prompt types */}
@@ -676,7 +722,7 @@ ${completedPrompts.join('\n')}`;
             </CardContent>
           </Card>
         )}
-
+        
         {/* History Panel */}
         <PromptHistoryPanel
           history={history}

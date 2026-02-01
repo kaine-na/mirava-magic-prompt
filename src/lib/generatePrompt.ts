@@ -11,9 +11,68 @@ import {
   INPUT_LIMITS 
 } from "./sanitize";
 
-// Prompt length configuration
+// ============================================================================
+// PROMPT LENGTH CONFIGURATION
+// ============================================================================
+
+/** Default target word count for prompts */
+export const DEFAULT_PROMPT_LENGTH = 300;
+
+/** Minimum allowed word count */
+export const MIN_PROMPT_LENGTH = 10;
+
+/** Maximum allowed word count */
+export const MAX_PROMPT_LENGTH = 500;
+
+/** Minimum tokens to generate */
+export const MIN_TOKENS = 50;
+
+/** Maximum tokens to generate */
+export const MAX_TOKENS = 1200;
+
+/**
+ * Calculate max_tokens based on target word count.
+ * Uses approximately 2x multiplier (buffer for formatting).
+ * 
+ * Formula: maxTokens = Math.ceil(targetWords * 2)
+ * Clamped between MIN_TOKENS (50) and MAX_TOKENS (1200)
+ * 
+ * @param targetWords - Target word count (10-500)
+ * @returns Calculated max_tokens value
+ * 
+ * @example
+ * calculateMaxTokens(50)  // returns 100
+ * calculateMaxTokens(100) // returns 200
+ * calculateMaxTokens(200) // returns 400
+ * calculateMaxTokens(300) // returns 600
+ * calculateMaxTokens(500) // returns 1000
+ */
+export function calculateMaxTokens(targetWords: number): number {
+  const clampedWords = Math.max(MIN_PROMPT_LENGTH, Math.min(MAX_PROMPT_LENGTH, targetWords));
+  const calculatedTokens = Math.ceil(clampedWords * 2);
+  return Math.max(MIN_TOKENS, Math.min(MAX_TOKENS, calculatedTokens));
+}
+
+/**
+ * Validate and clamp prompt length to valid range
+ * @param length - Target word count
+ * @returns Clamped value between MIN_PROMPT_LENGTH and MAX_PROMPT_LENGTH
+ */
+export function validatePromptLength(length: number): number {
+  if (typeof length !== 'number' || isNaN(length)) {
+    return DEFAULT_PROMPT_LENGTH;
+  }
+  return Math.max(MIN_PROMPT_LENGTH, Math.min(MAX_PROMPT_LENGTH, Math.round(length)));
+}
+
+// ============================================================================
+// DEPRECATED: Legacy prompt length options (kept for reference)
+// ============================================================================
+
+/** @deprecated Use numeric promptLength instead */
 export type PromptLengthOption = "short" | "medium" | "long" | "detailed";
 
+/** @deprecated Use numeric promptLength instead */
 export interface PromptLengthConfig {
   label: string;
   targetWords: string;
@@ -21,6 +80,7 @@ export interface PromptLengthConfig {
   description: string;
 }
 
+/** @deprecated Use numeric promptLength with calculateMaxTokens() instead */
 export const promptLengthOptions: Record<PromptLengthOption, PromptLengthConfig> = {
   short: {
     label: "Short",
@@ -48,18 +108,25 @@ export const promptLengthOptions: Record<PromptLengthOption, PromptLengthConfig>
   },
 };
 
-// Get length-specific system prompt instructions
-function getPromptLengthInstructions(length: PromptLengthOption): string {
-  const config = promptLengthOptions[length];
+// ============================================================================
+// PROMPT LENGTH INSTRUCTIONS
+// ============================================================================
+
+/**
+ * Get length-specific system prompt instructions based on target word count
+ * @param targetWords - Target word count (10-500)
+ * @returns Instruction string for the AI model
+ */
+function getPromptLengthInstructions(targetWords: number): string {
+  const validatedLength = validatePromptLength(targetWords);
   
-  const instructions: Record<PromptLengthOption, string> = {
-    short: `Generate a CONCISE prompt with approximately ${config.targetWords} words. Focus on essential elements only: subject, style, and key atmosphere. No unnecessary adjectives.`,
-    medium: `Generate a BALANCED prompt with approximately ${config.targetWords} words. Include subject, style, mood, lighting, and composition details. Good balance of brevity and detail.`,
-    long: `Generate a DETAILED prompt with approximately ${config.targetWords} words. Include comprehensive descriptions: subject, style, mood, lighting, composition, atmosphere, textures, colors, and artistic direction.`,
-    detailed: `Generate a VERY DETAILED prompt with approximately ${config.targetWords} words. Be highly descriptive with extensive coverage of: subject, style, mood, lighting, composition, atmosphere, textures, colors, artistic techniques, camera angles, material qualities, and environmental details.`,
-  };
-  
-  return instructions[length];
+  if (validatedLength < 50) {
+    return `Generate a prompt with approximately ${validatedLength} words. Be CONCISE and FOCUSED. Include only the essential elements: subject and primary style. No unnecessary details.`;
+  } else if (validatedLength <= 150) {
+    return `Generate a prompt with approximately ${validatedLength} words. Include subject, style, lighting, and mood. Balance brevity with descriptive detail.`;
+  } else {
+    return `Generate a COMPREHENSIVE prompt with approximately ${validatedLength} words. Be highly descriptive with extensive coverage of: subject, style, mood, lighting, composition, atmosphere, textures, colors, artistic techniques, camera angles, and environmental details.`;
+  }
 }
 
 interface GenerateOptions {
@@ -71,7 +138,7 @@ interface GenerateOptions {
   baseUrl?: string;
   creativity?: number; // 1-5 scale
   backgroundStyle?: string; // Background style option
-  promptLength?: PromptLengthOption; // Prompt length option
+  promptLength?: number; // Target word count (10-500), default: 300
 }
 
 interface BatchGenerateOptions extends GenerateOptions {
@@ -187,8 +254,8 @@ async function generateSinglePrompt({
   variationIndex,
   creativity = 3,
   backgroundStyle = "none",
-  promptLength = "medium",
-}: GenerateOptions & { variationIndex: number; creativity?: number; backgroundStyle?: string; promptLength?: PromptLengthOption }): Promise<string> {
+  promptLength = DEFAULT_PROMPT_LENGTH,
+}: GenerateOptions & { variationIndex: number; creativity?: number; backgroundStyle?: string; promptLength?: number }): Promise<string> {
   // ========================================
   // SECURITY: Input validation and sanitization
   // ========================================
@@ -223,9 +290,7 @@ async function generateSinglePrompt({
   const bgInstruction = backgroundInstructions[backgroundStyle] || "";
 
   // Get prompt length configuration
-  const lengthConfig = promptLengthOptions[promptLength];
-  const lengthInstruction = getPromptLengthInstructions(promptLength);
-  const maxTokens = lengthConfig.maxTokens;
+  const maxTokens = calculateMaxTokens(promptLength);
 
   const systemPrompt = getPromptTemplate(sanitizedPromptType, sanitizedUserInput);
   
@@ -250,7 +315,7 @@ async function generateSinglePrompt({
 This is variation #${variationIndex + 1} - make it distinctly different from other variations while keeping the core concept.
 
 PROMPT LENGTH REQUIREMENT (CRITICAL):
-${lengthInstruction}
+${getPromptLengthInstructions(promptLength)}
 
 ABSOLUTE OUTPUT RULES - FOLLOW EXACTLY:
 1. Output ONLY the final prompt text - NOTHING ELSE
