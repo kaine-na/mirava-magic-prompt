@@ -55,6 +55,75 @@ function getCreativityParams(creativity: number = 3) {
   return params[level as keyof typeof params];
 }
 
+// Get creativity params formatted for specific provider
+function getCreativityParamsForProvider(creativity: number = 3, provider: ApiProvider) {
+  const base = getCreativityParams(creativity);
+  
+  if (provider === "gemini") {
+    // Gemini uses camelCase and different param names
+    // Note: topK may not be supported in all Gemini models, so we omit it
+    return {
+      temperature: base.temperature,
+      topP: base.top_p,
+      // topK is not reliably supported, omitting it
+    };
+  }
+  
+  // OpenAI, Groq, OpenRouter use snake_case
+  return {
+    temperature: base.temperature,
+    top_p: base.top_p,
+    // top_k is not standard in OpenAI API, only some providers support it
+  };
+}
+
+// Build request for Gemini API (uses different format)
+function buildGeminiRequest(
+  model: string, 
+  systemPrompt: string, 
+  userContent: string, 
+  creativity: number
+) {
+  const creativityParams = getCreativityParamsForProvider(creativity, "gemini");
+  
+  return {
+    contents: [
+      {
+        role: "user",
+        parts: [{ text: `${systemPrompt}\n\n${userContent}` }]
+      }
+    ],
+    generationConfig: {
+      ...creativityParams,
+      maxOutputTokens: 500,
+    },
+    systemInstruction: {
+      parts: [{ text: systemPrompt }]
+    }
+  };
+}
+
+// Build request for OpenAI-compatible APIs
+function buildOpenAIRequest(
+  model: string,
+  systemContent: string,
+  userContent: string,
+  creativity: number,
+  provider: ApiProvider
+) {
+  const creativityParams = getCreativityParamsForProvider(creativity, provider);
+  
+  return {
+    model,
+    messages: [
+      { role: "system", content: systemContent },
+      { role: "user", content: userContent },
+    ],
+    max_tokens: 500,
+    ...creativityParams,
+  };
+}
+
 // Single prompt generation with security validation
 async function generateSinglePrompt({
   apiKey,
@@ -118,18 +187,8 @@ async function generateSinglePrompt({
     baseUrl = providerEndpoints[provider].base;
   }
 
-  const response = await fetch(`${baseUrl}/chat/completions`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${sanitizedApiKey}`,
-    },
-    body: JSON.stringify({
-      model: sanitizedModel || getDefaultModel(provider),
-      messages: [
-        { 
-          role: "system", 
-          content: `You are an expert prompt engineer. Generate a UNIQUE and CREATIVE prompt variation based on user input.
+  // Build the system instruction content
+  const systemContent = `You are an expert prompt engineer. Generate a UNIQUE and CREATIVE prompt variation based on user input.
 This is variation #${variationIndex + 1} - make it distinctly different from other variations while keeping the core concept.
 
 ABSOLUTE OUTPUT RULES - FOLLOW EXACTLY:
@@ -174,28 +233,89 @@ BACKGROUND REQUIREMENT (CRITICAL - MUST INCLUDE):
 ${bgInstruction}
 Include this background specification prominently in your generated prompt.` : ''}
 
-START YOUR RESPONSE DIRECTLY WITH THE PROMPT CONTENT.` 
+START YOUR RESPONSE DIRECTLY WITH THE PROMPT CONTENT.`;
+
+  let response: Response;
+  let rawPrompt: string;
+
+  if (provider === "gemini") {
+    // Gemini uses a different API format
+    const modelName = sanitizedModel || getDefaultModel(provider);
+    const geminiUrl = `${baseUrl}/models/${modelName}:generateContent?key=${sanitizedApiKey}`;
+    const creativityParams = getCreativityParamsForProvider(creativity, "gemini");
+    
+    response = await fetch(geminiUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        contents: [
+          {
+            role: "user",
+            parts: [{ text: systemPrompt }]
+          }
+        ],
+        systemInstruction: {
+          parts: [{ text: systemContent }]
         },
-        { role: "user", content: systemPrompt },
-      ],
-      max_tokens: 500,
-      ...getCreativityParams(creativity),
-    }),
-  });
+        generationConfig: {
+          ...creativityParams,
+          maxOutputTokens: 500,
+        },
+      }),
+    });
 
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({}));
-    throw new Error(error.error?.message || `${provider} API error: ${response.status}`);
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.error?.message || `Gemini API error: ${response.status}`);
+    }
+
+    // Validate content type
+    const contentType = response.headers.get('content-type');
+    if (!validateContentType(contentType, 'application/json')) {
+      throw new Error('Invalid response content type from API');
+    }
+
+    const data = await response.json();
+    // Gemini response format: { candidates: [{ content: { parts: [{ text: "..." }] } }] }
+    rawPrompt = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+  } else {
+    // OpenAI-compatible API (OpenAI, Groq, OpenRouter, Custom)
+    const creativityParams = getCreativityParamsForProvider(creativity, provider);
+    
+    response = await fetch(`${baseUrl}/chat/completions`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${sanitizedApiKey}`,
+      },
+      body: JSON.stringify({
+        model: sanitizedModel || getDefaultModel(provider),
+        messages: [
+          { role: "system", content: systemContent },
+          { role: "user", content: systemPrompt },
+        ],
+        max_tokens: 500,
+        ...creativityParams,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.error?.message || `${provider} API error: ${response.status}`);
+    }
+
+    // Validate content type
+    const contentType = response.headers.get('content-type');
+    if (!validateContentType(contentType, 'application/json')) {
+      throw new Error('Invalid response content type from API');
+    }
+
+    const data = await response.json();
+    // OpenAI response format: { choices: [{ message: { content: "..." } }] }
+    rawPrompt = data.choices?.[0]?.message?.content || "";
   }
-
-  // Validate content type
-  const contentType = response.headers.get('content-type');
-  if (!validateContentType(contentType, 'application/json')) {
-    throw new Error('Invalid response content type from API');
-  }
-
-  const data = await response.json();
-  const rawPrompt = data.choices[0].message.content || "";
   
   // Parse and clean the prompt, then apply IP filter
   const cleanedPrompt = parsePrompt(rawPrompt);

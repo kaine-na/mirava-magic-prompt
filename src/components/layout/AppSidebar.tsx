@@ -512,9 +512,9 @@ function MobileSidebar({
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
               transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              className="fixed left-0 top-14 bottom-0 w-64 bg-sidebar border-r-2 border-border-strong z-50 p-4"
+              className="fixed left-0 top-14 bottom-0 w-64 bg-sidebar border-r-2 border-border-strong z-50 flex flex-col"
             >
-              <nav className="flex flex-col gap-1">
+              <nav className="flex-1 flex flex-col gap-1 overflow-y-auto overscroll-contain p-4 touch-pan-y">
                 {/* Settings at top */}
                 <Link
                   to="/settings"
