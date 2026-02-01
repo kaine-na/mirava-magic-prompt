@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 
-const CUSTOM_MODELS_STORAGE_KEY = "promptgen_custom_models";
+const CUSTOM_MODELS_STORAGE_KEY = "mirava_custom_models";
 
 export interface CustomModel {
   id: string;

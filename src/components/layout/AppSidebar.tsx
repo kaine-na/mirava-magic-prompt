@@ -6,7 +6,9 @@ import {
   // Image style icons
   Layers, Eye, Star, Box, Palette, Camera, PenTool, Grid3X3,
   // Video style icons
-  Clapperboard, Film, Play, Clock, FileText, Music, Timer
+  Clapperboard, Film, Play, Clock, FileText, Music, Timer,
+  // Social/Support icons
+  MessageCircle, Radio, ShoppingBag, Coffee
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -122,7 +124,7 @@ export function AppSidebar({ selectedPromptType, onSelectPromptType }: AppSideba
                     animate={{ opacity: 1 }}
                     className="font-heading font-bold text-base whitespace-nowrap"
                   >
-                    PromptGen
+                    Mirava Magic
                   </motion.h1>
                 </Link>
                 
@@ -177,6 +179,135 @@ export function AppSidebar({ selectedPromptType, onSelectPromptType }: AppSideba
                 )}
               </AnimatePresence>
             </Link>
+
+            {/* Social/Support Links */}
+            <a
+              href="https://chat.whatsapp.com/Hrnt98Ls4mH5RaQuyti824"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={cn(
+                "flex items-center rounded-xl transition-all duration-200",
+                isOpen ? "gap-3 py-2 px-3 w-full" : "p-2 justify-center",
+                "hover:bg-green-500/10"
+              )}
+              title={!isOpen ? "Join Group WhatsApp" : undefined}
+            >
+              <motion.div 
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="w-9 h-9 rounded-full border-2 border-border-strong bg-green-500 flex items-center justify-center flex-shrink-0"
+              >
+                <MessageCircle className="h-4 w-4 text-white" strokeWidth={2.5} />
+              </motion.div>
+              <AnimatePresence>
+                {isOpen && (
+                  <motion.span
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -10 }}
+                    className="font-semibold text-sm whitespace-nowrap"
+                  >
+                    Join Group WhatsApp
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </a>
+
+            <a
+              href="https://whatsapp.com/channel/0029Vb6eoYPLY6d04a4n8u0E"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={cn(
+                "flex items-center rounded-xl transition-all duration-200",
+                isOpen ? "gap-3 py-2 px-3 w-full" : "p-2 justify-center",
+                "hover:bg-green-500/10"
+              )}
+              title={!isOpen ? "Join Saluran WhatsApp" : undefined}
+            >
+              <motion.div 
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="w-9 h-9 rounded-full border-2 border-border-strong bg-green-600 flex items-center justify-center flex-shrink-0"
+              >
+                <Radio className="h-4 w-4 text-white" strokeWidth={2.5} />
+              </motion.div>
+              <AnimatePresence>
+                {isOpen && (
+                  <motion.span
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -10 }}
+                    className="font-semibold text-sm whitespace-nowrap"
+                  >
+                    Join Saluran WhatsApp
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </a>
+
+            <a
+              href="https://lynk.id/mirava"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={cn(
+                "flex items-center rounded-xl transition-all duration-200",
+                isOpen ? "gap-3 py-2 px-3 w-full" : "p-2 justify-center",
+                "hover:bg-primary/10"
+              )}
+              title={!isOpen ? "List My Product" : undefined}
+            >
+              <motion.div 
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="w-9 h-9 rounded-full border-2 border-border-strong bg-primary flex items-center justify-center flex-shrink-0"
+              >
+                <ShoppingBag className="h-4 w-4 text-primary-foreground" strokeWidth={2.5} />
+              </motion.div>
+              <AnimatePresence>
+                {isOpen && (
+                  <motion.span
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -10 }}
+                    className="font-semibold text-sm whitespace-nowrap"
+                  >
+                    List My Product
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </a>
+
+            <a
+              href="https://trakteer.id/mirava"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={cn(
+                "flex items-center rounded-xl transition-all duration-200",
+                isOpen ? "gap-3 py-2 px-3 w-full" : "p-2 justify-center",
+                "hover:bg-amber-500/10"
+              )}
+              title={!isOpen ? "Buy Coffee For Me!" : undefined}
+            >
+              <motion.div 
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="w-9 h-9 rounded-full border-2 border-border-strong bg-amber-500 flex items-center justify-center flex-shrink-0"
+              >
+                <Coffee className="h-4 w-4 text-white" strokeWidth={2.5} />
+              </motion.div>
+              <AnimatePresence>
+                {isOpen && (
+                  <motion.span
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -10 }}
+                    className="font-semibold text-sm whitespace-nowrap"
+                  >
+                    Buy Coffee For Me!
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </a>
 
             <div className={cn(
               "my-2 border-t border-border",
@@ -356,7 +487,7 @@ function MobileSidebar({
           <div className="w-8 h-8 bg-tertiary rounded-full border-2 border-border-strong shadow-hard-sm flex items-center justify-center flex-shrink-0">
             <Zap className="h-4 w-4 text-tertiary-foreground" strokeWidth={2.5} />
           </div>
-          <span className="font-heading font-bold leading-none">PromptGen</span>
+          <span className="font-heading font-bold leading-none">Mirava Magic</span>
         </Link>
         <button
           onClick={() => setIsOpen(!isOpen)}
@@ -398,6 +529,75 @@ function MobileSidebar({
                   </div>
                   <span className="font-semibold text-base">Settings</span>
                 </Link>
+
+                {/* Social/Support Links */}
+                <a
+                  href="https://chat.whatsapp.com/Hrnt98Ls4mH5RaQuyti824"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setIsOpen(false)}
+                  className="flex items-center gap-3 py-2.5 px-2 rounded-xl transition-all duration-200 hover:bg-green-500/10"
+                >
+                  <motion.div 
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="w-9 h-9 rounded-full border-2 border-border-strong bg-green-500 flex items-center justify-center"
+                  >
+                    <MessageCircle className="h-4 w-4 text-white" strokeWidth={2.5} />
+                  </motion.div>
+                  <span className="font-semibold text-sm">Join Group WhatsApp</span>
+                </a>
+
+                <a
+                  href="https://whatsapp.com/channel/0029Vb6eoYPLY6d04a4n8u0E"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setIsOpen(false)}
+                  className="flex items-center gap-3 py-2.5 px-2 rounded-xl transition-all duration-200 hover:bg-green-500/10"
+                >
+                  <motion.div 
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="w-9 h-9 rounded-full border-2 border-border-strong bg-green-600 flex items-center justify-center"
+                  >
+                    <Radio className="h-4 w-4 text-white" strokeWidth={2.5} />
+                  </motion.div>
+                  <span className="font-semibold text-sm">Join Saluran WhatsApp</span>
+                </a>
+
+                <a
+                  href="https://lynk.id/mirava"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setIsOpen(false)}
+                  className="flex items-center gap-3 py-2.5 px-2 rounded-xl transition-all duration-200 hover:bg-primary/10"
+                >
+                  <motion.div 
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="w-9 h-9 rounded-full border-2 border-border-strong bg-primary flex items-center justify-center"
+                  >
+                    <ShoppingBag className="h-4 w-4 text-primary-foreground" strokeWidth={2.5} />
+                  </motion.div>
+                  <span className="font-semibold text-sm">List My Product</span>
+                </a>
+
+                <a
+                  href="https://trakteer.id/mirava"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setIsOpen(false)}
+                  className="flex items-center gap-3 py-2.5 px-2 rounded-xl transition-all duration-200 hover:bg-amber-500/10"
+                >
+                  <motion.div 
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="w-9 h-9 rounded-full border-2 border-border-strong bg-amber-500 flex items-center justify-center"
+                  >
+                    <Coffee className="h-4 w-4 text-white" strokeWidth={2.5} />
+                  </motion.div>
+                  <span className="font-semibold text-sm">Buy Coffee For Me!</span>
+                </a>
 
                 <div className="my-3 border-t border-border" />
 

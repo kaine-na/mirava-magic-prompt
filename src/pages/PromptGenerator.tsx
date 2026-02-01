@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Sparkles, Copy, Check, AlertCircle, Loader2, Star, Upload, Layers, RefreshCw, Download, Flame } from "lucide-react";
+import { Sparkles, Copy, Check, AlertCircle, Loader2, Star, Upload, Layers, RefreshCw, Download, Flame, ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,19 +21,35 @@ const promptTypeLabels: Record<string, string> = {
   art: "Art Style",
 };
 
+// Background style options for image/video generation
+const backgroundStyles = [
+  { id: "none", label: "Default / Auto", description: "Let AI decide the background" },
+  { id: "pure-white", label: "Pure White Background", description: "Clean white background (#FFFFFF)" },
+  { id: "pure-green", label: "Green Screen", description: "Chroma key green background for compositing" },
+  { id: "pure-black", label: "Pure Black Background", description: "Clean black background (#000000)" },
+  { id: "transparent", label: "Transparent", description: "No background (for supported formats)" },
+  { id: "studio", label: "Studio Backdrop", description: "Professional studio lighting with neutral backdrop" },
+  { id: "gradient-white", label: "White Gradient", description: "Soft white to light gray gradient" },
+  { id: "gradient-black", label: "Black Gradient", description: "Dark gradient vignette effect" },
+] as const;
+
+type BackgroundStyleId = typeof backgroundStyles[number]["id"];
+
 
 
 export default function PromptGenerator() {
   const [promptType, setPromptType] = useState("image");
   const [userInput, setUserInput] = useState("");
-  const [generatedPrompts, setGeneratedPrompts] = useState<string[]>([]);
+  const [generatedPrompts, setGeneratedPrompts] = useState<(string | null)[]>([]);
   const [batchSize, setBatchSize] = useState(3);
   const [creativity, setCreativity] = useState(3);
+  const [backgroundStyle, setBackgroundStyle] = useState<BackgroundStyleId>("none");
   const [isLoading, setIsLoading] = useState(false);
   const [regeneratingIndex, setRegeneratingIndex] = useState<number | null>(null);
   const [progress, setProgress] = useState({ completed: 0, total: 0 });
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const outputRef = useRef<HTMLDivElement>(null);
   
   const { provider, model, selectedCustomModelId, currentApiKey, hasApiKey } = useApiKey();
   const { customModels } = useCustomModels();
@@ -86,7 +102,7 @@ export default function PromptGenerator() {
     }
   };
 
-  const handleGenerate = async () => {
+const handleGenerate = async () => {
     if (!userInput.trim()) {
       toast({
         title: "Oops!",
@@ -112,8 +128,12 @@ export default function PromptGenerator() {
     }
 
     setIsLoading(true);
-    setGeneratedPrompts([]);
+    // Initialize with empty placeholders to show loading state for each slot
+    setGeneratedPrompts(new Array(batchSize).fill(null));
     setProgress({ completed: 0, total: batchSize });
+    
+    // Track which prompts have been saved to history
+    const savedToHistory = new Set<number>();
     
     try {
       const results = await generatePromptBatch({
@@ -125,21 +145,39 @@ export default function PromptGenerator() {
         baseUrl: selectedCustomModel?.baseUrl,
         batchSize,
         creativity,
+        backgroundStyle,
         onProgress: (completed, total) => {
           setProgress({ completed, total });
         },
+        onPromptReady: (prompt, index) => {
+          // Stream each prompt as it completes
+          setGeneratedPrompts(prev => {
+            const updated = [...prev];
+            updated[index] = prompt;
+            return updated;
+          });
+          
+          // Save to history immediately when ready
+          if (!savedToHistory.has(index)) {
+            savedToHistory.add(index);
+            addToHistory({
+              promptType,
+              userInput,
+              generatedPrompt: prompt,
+            });
+          }
+          
+          // Auto-scroll to output on first result
+          if (index === 0 || savedToHistory.size === 1) {
+            setTimeout(() => {
+              outputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 100);
+          }
+        },
       });
       
+      // Final update with all results (in case any were missed)
       setGeneratedPrompts(results);
-      
-      // Save all to history
-      results.forEach((prompt) => {
-        addToHistory({
-          promptType,
-          userInput,
-          generatedPrompt: prompt,
-        });
-      });
       
       toast({
         title: `✨ ${results.length} Prompt${results.length > 1 ? 's' : ''} Generated!`,
@@ -151,6 +189,8 @@ export default function PromptGenerator() {
         description: error instanceof Error ? error.message : "Something went wrong",
         variant: "destructive",
       });
+      // Clear empty placeholders on error
+      setGeneratedPrompts(prev => prev.filter(p => p !== null));
     } finally {
       setIsLoading(false);
     }
@@ -166,12 +206,13 @@ export default function PromptGenerator() {
     setTimeout(() => setCopiedIndex(null), 2000);
   };
 
-  const handleCopyAll = async () => {
-    const allPrompts = generatedPrompts.map((p, i) => `#${i + 1}: ${p}`).join("\n\n");
+const handleCopyAll = async () => {
+    const completedPrompts = generatedPrompts.filter((p): p is string => p !== null);
+    const allPrompts = completedPrompts.map((p, i) => `#${i + 1}: ${p}`).join("\n\n");
     await navigator.clipboard.writeText(allPrompts);
     toast({
       title: "All Copied!",
-      description: `${generatedPrompts.length} prompts copied to clipboard`,
+      description: `${completedPrompts.length} prompts copied to clipboard`,
     });
   };
 
@@ -193,6 +234,7 @@ export default function PromptGenerator() {
         userInput,
         baseUrl: selectedCustomModel?.baseUrl,
         creativity,
+        backgroundStyle,
       });
       
       setGeneratedPrompts(prev => {
@@ -222,11 +264,12 @@ export default function PromptGenerator() {
     }
   };
 
-  const handleExportTxt = () => {
+const handleExportTxt = () => {
+    const completedPrompts = generatedPrompts.filter((p): p is string => p !== null);
     const content = `Generate By: Mirava Studio.
 ==========================
 
-${generatedPrompts.join('\n')}`;
+${completedPrompts.join('\n')}`;
     
     const blob = new Blob([content], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
@@ -240,7 +283,7 @@ ${generatedPrompts.join('\n')}`;
     
     toast({
       title: "📄 Exported!",
-      description: `${generatedPrompts.length} prompts saved to file`,
+      description: `${completedPrompts.length} prompts saved to file`,
     });
   };
 
@@ -403,6 +446,38 @@ ${generatedPrompts.join('\n')}`;
                   </div>
                 </div>
               </div>
+
+              {/* Background Style Selector - Show for image/video/3d/art prompt types */}
+              {(promptType.startsWith("image") || promptType.startsWith("video") || promptType === "3d" || promptType === "art") && (
+                <div className="mt-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-medium">Background Style:</span>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {backgroundStyles.map((style) => (
+                      <button
+                        key={style.id}
+                        onClick={() => setBackgroundStyle(style.id)}
+                        className={cn(
+                          "px-3 py-2 text-xs font-medium rounded-lg border-2 transition-all text-left",
+                          backgroundStyle === style.id
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-border bg-background hover:border-primary/50 hover:bg-muted"
+                        )}
+                        title={style.description}
+                      >
+                        {style.label}
+                      </button>
+                    ))}
+                  </div>
+                  {backgroundStyle !== "none" && (
+                    <p className="text-xs text-muted-foreground mt-2">
+                      ✓ Prompt akan include: "{backgroundStyles.find(s => s.id === backgroundStyle)?.description}"
+                    </p>
+                  )}
+                </div>
+              )}
               
               <div className="flex items-center gap-2">
                 {(() => {
@@ -453,20 +528,24 @@ ${generatedPrompts.join('\n')}`;
           </CardContent>
         </Card>
 
-        {/* Output Section - Multiple Prompts */}
+{/* Output Section - Multiple Prompts with Streaming */}
         {generatedPrompts.length > 0 && (
-          <Card className="border-quaternary shadow-quaternary hover:translate-x-0 hover:translate-y-0">
+          <Card ref={outputRef} className="border-quaternary shadow-quaternary hover:translate-x-0 hover:translate-y-0">
             <CardHeader className="pb-3 sm:pb-4">
               <CardTitle className="font-heading text-base sm:text-lg flex flex-col sm:flex-row sm:items-center gap-2 sm:justify-between">
                 <div className="flex items-center gap-2">
                   <span className="w-7 h-7 sm:w-8 sm:h-8 bg-quaternary rounded-full border-2 border-border-strong flex items-center justify-center text-xs sm:text-sm text-quaternary-foreground font-bold">2</span>
-                  <span>Generated Prompts ({generatedPrompts.length})</span>
+                  <span>Generated Prompts ({generatedPrompts.filter(p => p !== null).length}/{generatedPrompts.length})</span>
+                  {isLoading && (
+                    <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                  )}
                 </div>
                 <div className="flex items-center gap-2">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={handleExportTxt}
+                    disabled={generatedPrompts.filter(p => p !== null).length === 0}
                     className="gap-1.5 text-xs"
                   >
                     <Download className="h-3.5 w-3.5" />
@@ -476,6 +555,7 @@ ${generatedPrompts.join('\n')}`;
                     variant="outline"
                     size="sm"
                     onClick={handleCopyAll}
+                    disabled={generatedPrompts.filter(p => p !== null).length === 0}
                     className="gap-1.5 text-xs"
                   >
                     <Copy className="h-3.5 w-3.5" />
@@ -489,52 +569,76 @@ ${generatedPrompts.join('\n')}`;
                 <div 
                   key={index} 
                   className={cn(
-                    "bg-muted rounded-xl p-3 sm:p-4 border-2 border-border relative group transition-opacity",
-                    regeneratingIndex === index && "opacity-50"
+                    "bg-muted rounded-xl p-3 sm:p-4 border-2 border-border relative group transition-all",
+                    regeneratingIndex === index && "opacity-50",
+                    prompt === null && "animate-pulse"
                   )}
                 >
                   <div className="flex items-start justify-between gap-2 mb-2">
-                    <span className="px-2 py-0.5 bg-primary/10 text-primary rounded-full text-xs font-semibold border border-primary/20">
-                      #{index + 1}
-                    </span>
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleRegenerate(index)}
-                        disabled={regeneratingIndex !== null}
-                        className="h-7 px-2"
-                      >
-                        {regeneratingIndex === index ? (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        ) : (
-                          <>
-                            <RefreshCw className="h-3.5 w-3.5 mr-1" />
-                            <span className="text-xs">Regenerate</span>
-                          </>
-                        )}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleCopy(prompt, index)}
-                        className="h-7 px-2"
-                      >
-                        {copiedIndex === index ? (
-                          <>
-                            <Check className="h-3.5 w-3.5 mr-1" />
-                            <span className="text-xs">Copied!</span>
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="h-3.5 w-3.5 mr-1" />
-                            <span className="text-xs">Copy</span>
-                          </>
-                        )}
-                      </Button>
+                    <div className="flex items-center gap-2">
+                      <span className={cn(
+                        "px-2 py-0.5 rounded-full text-xs font-semibold border",
+                        prompt !== null 
+                          ? "bg-primary/10 text-primary border-primary/20" 
+                          : "bg-muted-foreground/10 text-muted-foreground border-muted-foreground/20"
+                      )}>
+                        #{index + 1}
+                      </span>
+                      {prompt === null && (
+                        <span className="text-xs text-muted-foreground flex items-center gap-1">
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                          Generating...
+                        </span>
+                      )}
                     </div>
+                    {prompt !== null && (
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRegenerate(index)}
+                          disabled={regeneratingIndex !== null || isLoading}
+                          className="h-7 px-2"
+                        >
+                          {regeneratingIndex === index ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <>
+                              <RefreshCw className="h-3.5 w-3.5 mr-1" />
+                              <span className="text-xs">Regenerate</span>
+                            </>
+                          )}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleCopy(prompt, index)}
+                          className="h-7 px-2"
+                        >
+                          {copiedIndex === index ? (
+                            <>
+                              <Check className="h-3.5 w-3.5 mr-1" />
+                              <span className="text-xs">Copied!</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="h-3.5 w-3.5 mr-1" />
+                              <span className="text-xs">Copy</span>
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    )}
                   </div>
-                  <p className="whitespace-pre-wrap text-xs sm:text-sm leading-relaxed">{prompt}</p>
+                  {prompt !== null ? (
+                    <p className="whitespace-pre-wrap text-xs sm:text-sm leading-relaxed">{prompt}</p>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="h-4 bg-muted-foreground/10 rounded w-full"></div>
+                      <div className="h-4 bg-muted-foreground/10 rounded w-5/6"></div>
+                      <div className="h-4 bg-muted-foreground/10 rounded w-4/6"></div>
+                    </div>
+                  )}
                 </div>
               ))}
             </CardContent>

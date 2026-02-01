@@ -1,0 +1,15 @@
+# Cloudflare Pages Configuration
+name = "mirava-magic-prompt"
+compatibility_date = "2024-01-01"
+
+# Pages-specific settings
+[site]
+bucket = "./dist"
+
+# Build settings (for wrangler pages deploy)
+[build]
+command = "npm run build"
+
+# Environment variables (optional - can also set in dashboard)
+# [vars]
+# VITE_APP_NAME = "PromptGen"

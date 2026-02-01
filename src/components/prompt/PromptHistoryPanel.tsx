@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Clock, Star, Trash2, Copy, Check, ChevronDown, ChevronUp, X, Download, FileJson, FileText } from "lucide-react";
+import { Clock, Star, Trash2, Copy, Check, ChevronDown, ChevronUp, X, Download, FileJson, FileText, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -97,11 +97,27 @@ export function PromptHistoryPanel({
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
   const { toast } = useToast();
+
+  const ITEMS_PER_PAGE = 10;
 
   const filteredHistory = showFavoritesOnly
     ? history.filter((item) => item.isFavorite)
     : history;
+
+  // Pagination calculations
+  const totalItems = filteredHistory.length;
+  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const paginatedHistory = filteredHistory.slice(startIndex, endIndex);
+
+  // Reset to page 1 when filter changes
+  const handleFilterChange = () => {
+    setShowFavoritesOnly(!showFavoritesOnly);
+    setCurrentPage(1);
+  };
 
   const handleCopy = async (text: string, id: string) => {
     await navigator.clipboard.writeText(text);
@@ -154,7 +170,7 @@ export function PromptHistoryPanel({
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `promptgen-${exportFavoritesOnly ? "favorites" : "all"}-${new Date().toISOString().split("T")[0]}.json`;
+    a.download = `mirava-${exportFavoritesOnly ? "favorites" : "all"}-${new Date().toISOString().split("T")[0]}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -207,7 +223,7 @@ ${"═".repeat(50)}\n\n`;
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `promptgen-${exportFavoritesOnly ? "favorites" : "all"}-${new Date().toISOString().split("T")[0]}.txt`;
+    a.download = `mirava-${exportFavoritesOnly ? "favorites" : "all"}-${new Date().toISOString().split("T")[0]}.txt`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -249,10 +265,10 @@ ${"═".repeat(50)}\n\n`;
           {/* Filters & Actions */}
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <div className="flex gap-1.5 sm:gap-2">
-              <Button
+<Button
                 variant={showFavoritesOnly ? "default" : "outline"}
                 size="sm"
-                onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
+                onClick={handleFilterChange}
                 className="gap-1 text-xs sm:text-sm h-8 sm:h-9 px-2 sm:px-3"
               >
                 <Star className={cn("h-3 w-3 sm:h-4 sm:w-4", showFavoritesOnly && "fill-current")} />
@@ -300,14 +316,14 @@ ${"═".repeat(50)}\n\n`;
             </Button>
           </div>
 
-          {/* History List */}
+{/* History List */}
           <div className="space-y-2 sm:space-y-3 max-h-[350px] sm:max-h-[400px] overflow-y-auto pr-1 sm:pr-2">
-            {filteredHistory.length === 0 ? (
+            {paginatedHistory.length === 0 ? (
               <p className="text-center text-muted-foreground py-4 text-sm">
                 No {showFavoritesOnly ? "favorites" : "history"} yet
               </p>
             ) : (
-              filteredHistory.map((item) => (
+              paginatedHistory.map((item) => (
                 <div
                   key={item.id}
                   className={cn(
@@ -404,6 +420,38 @@ ${"═".repeat(50)}\n\n`;
               ))
             )}
           </div>
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between pt-3 border-t border-border mt-3">
+              <span className="text-xs text-muted-foreground">
+                Showing {startIndex + 1}-{Math.min(endIndex, totalItems)} of {totalItems}
+              </span>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="h-8 w-8 p-0"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="text-xs font-medium px-2">
+                  {currentPage} / {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="h-8 w-8 p-0"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       )}
     </Card>

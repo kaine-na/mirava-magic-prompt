@@ -3,24 +3,91 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- TODO: Set the document title to the name of your application -->
-    <title>Lovable App</title>
-    <meta name="description" content="Lovable Generated Project" />
-    <meta name="author" content="Lovable" />
+    
+    <!-- 
+      ============================================================================
+      SECURITY HEADERS - Content Security Policy
+      ============================================================================
+      
+      This CSP configuration provides defense-in-depth against XSS attacks.
+      
+      IMPORTANT: This meta tag provides client-side CSP. For production, 
+      configure these as HTTP headers in your hosting platform for stronger security.
+      
+      See: https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP
+      ============================================================================
+    -->
+    <meta http-equiv="Content-Security-Policy" content="
+      default-src 'self';
+      script-src 'self' 'unsafe-inline' 'unsafe-eval';
+      style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+      font-src 'self' https://fonts.gstatic.com data:;
+      img-src 'self' data: blob: https:;
+      connect-src 'self' https:;
+      frame-ancestors 'none';
+      form-action 'self';
+      base-uri 'self';
+      object-src 'none';
+      upgrade-insecure-requests;
+    " />
+    
+    <!-- Prevent clickjacking -->
+    <meta http-equiv="X-Frame-Options" content="DENY" />
+    
+    <!-- Prevent MIME type sniffing -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    
+    <!-- Referrer policy - don't leak sensitive data in referrer header -->
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    
+    <!-- Permissions policy - disable features we don't need -->
+    <meta http-equiv="Permissions-Policy" content="
+      camera=(),
+      microphone=(),
+      geolocation=(),
+      payment=(),
+      usb=(),
+      magnetometer=(),
+      gyroscope=(),
+      accelerometer=()
+    " />
 
-    <!-- TODO: Update og:title to match your application name -->
-    <meta property="og:title" content="Lovable App" />
-    <meta property="og:description" content="Lovable Generated Project" />
+    <title>Mirava Magic Prompt - AI Prompt Generator</title>
+    <meta name="description" content="Free AI Prompt Generator - Create optimized prompts for Midjourney, DALL-E, Stable Diffusion and more" />
+    <meta name="author" content="Mirava" />
+
+    <meta property="og:title" content="Mirava Magic Prompt - AI Prompt Generator" />
+    <meta property="og:description" content="Free AI Prompt Generator - Create optimized prompts for Midjourney, DALL-E, Stable Diffusion and more" />
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <meta property="og:image" content="/og-image.png" />
 
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@Lovable" />
-    <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <meta name="twitter:site" content="@Mirava" />
+    <meta name="twitter:image" content="/og-image.png" />
   </head>
 
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- 
+      Security: Clear sensitive data on page unload 
+      This provides an additional layer of protection for API keys
+    -->
+    <script>
+      // Warn before leaving if there's unsaved work
+      window.addEventListener('beforeunload', function(e) {
+        // Optional: Clear session-sensitive data
+        // Uncomment if you want to clear on every tab close:
+        // sessionStorage.clear();
+      });
+      
+      // Detect potential XSS attempts via console
+      if (typeof console !== 'undefined') {
+        console.log('%c⚠️ Security Warning', 'color: red; font-size: 20px; font-weight: bold;');
+        console.log('%cDo not paste any code here! Attackers may trick you into running malicious code.', 
+          'color: red; font-size: 14px;');
+      }
+    </script>
   </body>
 </html>

@@ -63,7 +63,7 @@ export default function Settings() {
     setSelectedCustomModelId, clearApiKeyForProvider, hasApiKey 
   } = useApiKey();
   const { customModels, addCustomModel, removeCustomModel } = useCustomModels();
-  const { models, isLoading: isLoadingModels, error: modelsError, fetchModels } = useModels();
+  const { models, isLoading: isLoadingModels, error: modelsError, fetchModels, refreshModels } = useModels();
   
   const [inputKey, setInputKey] = useState("");
   const [showKey, setShowKey] = useState(false);
@@ -129,9 +129,9 @@ export default function Settings() {
     });
   };
 
-  const handleRefreshModels = () => {
+const handleRefreshModels = () => {
     if (currentApiKey && provider !== "custom") {
-      fetchModels(provider, currentApiKey);
+      refreshModels(provider, currentApiKey);
       toast({
         title: "Refreshing models...",
         description: "Fetching available models from API",
