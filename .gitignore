@@ -45,3 +45,8 @@ service-account.json
 temp-*.js
 *.bak
 *.tmp
+
+# Lock files (use package-lock.json for npm)
+bun.lockb
+yarn.lock
+pnpm-lock.yaml
