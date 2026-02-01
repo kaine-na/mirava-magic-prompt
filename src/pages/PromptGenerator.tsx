@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Sparkles, Copy, Check, AlertCircle, Loader2, Star, Upload, Layers, RefreshCw, Download, Flame, ImageIcon } from "lucide-react";
+import { Sparkles, Copy, Check, AlertCircle, Loader2, Star, Upload, Layers, RefreshCw, Download, Flame, ImageIcon, AlignLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,7 +9,7 @@ import { PromptHistoryPanel } from "@/components/prompt/PromptHistoryPanel";
 import { useApiKey } from "@/hooks/useApiKey";
 import { useCustomModels } from "@/hooks/useCustomModels";
 import { usePromptHistory, PromptHistoryItem } from "@/hooks/usePromptHistory";
-import { generatePromptBatch, generatePrompt } from "@/lib/generatePrompt";
+import { generatePromptBatch, generatePrompt, promptLengthOptions, type PromptLengthOption } from "@/lib/generatePrompt";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -43,6 +43,7 @@ export default function PromptGenerator() {
   const [generatedPrompts, setGeneratedPrompts] = useState<(string | null)[]>([]);
   const [batchSize, setBatchSize] = useState(3);
   const [creativity, setCreativity] = useState(3);
+  const [promptLength, setPromptLength] = useState<PromptLengthOption>("medium");
   const [backgroundStyle, setBackgroundStyle] = useState<BackgroundStyleId>("none");
   const [isLoading, setIsLoading] = useState(false);
   const [regeneratingIndex, setRegeneratingIndex] = useState<number | null>(null);
@@ -146,6 +147,7 @@ const handleGenerate = async () => {
         batchSize,
         creativity,
         backgroundStyle,
+        promptLength,
         onProgress: (completed, total) => {
           setProgress({ completed, total });
         },
@@ -235,6 +237,7 @@ const handleCopyAll = async () => {
         baseUrl: selectedCustomModel?.baseUrl,
         creativity,
         backgroundStyle,
+        promptLength,
       });
       
       setGeneratedPrompts(prev => {
@@ -445,6 +448,35 @@ ${completedPrompts.join('\n')}`;
                     </span>
                   </div>
                 </div>
+              </div>
+
+              {/* Prompt Length Selector */}
+              <div className="mt-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <AlignLeft className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">Prompt Length:</span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {(Object.entries(promptLengthOptions) as [PromptLengthOption, typeof promptLengthOptions[PromptLengthOption]][]).map(([key, config]) => (
+                    <button
+                      key={key}
+                      onClick={() => setPromptLength(key)}
+                      className={cn(
+                        "px-3 py-2 text-xs font-medium rounded-lg border-2 transition-all text-left",
+                        promptLength === key
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border bg-background hover:border-primary/50 hover:bg-muted"
+                      )}
+                      title={config.description}
+                    >
+                      <div className="font-semibold">{config.label}</div>
+                      <div className="text-[10px] opacity-70">{config.targetWords} words</div>
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  {promptLengthOptions[promptLength].description}
+                </p>
               </div>
 
               {/* Background Style Selector - Show for image/video/3d/art prompt types */}

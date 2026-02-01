@@ -11,6 +11,57 @@ import {
   INPUT_LIMITS 
 } from "./sanitize";
 
+// Prompt length configuration
+export type PromptLengthOption = "short" | "medium" | "long" | "detailed";
+
+export interface PromptLengthConfig {
+  label: string;
+  targetWords: string;
+  maxTokens: number;
+  description: string;
+}
+
+export const promptLengthOptions: Record<PromptLengthOption, PromptLengthConfig> = {
+  short: {
+    label: "Short",
+    targetWords: "15-25",
+    maxTokens: 100,
+    description: "Concise and focused prompt, ideal for Stable Diffusion"
+  },
+  medium: {
+    label: "Medium",
+    targetWords: "40-60",
+    maxTokens: 200,
+    description: "Balanced prompt with good detail, ideal for Midjourney"
+  },
+  long: {
+    label: "Long",
+    targetWords: "80-100",
+    maxTokens: 400,
+    description: "Detailed prompt with rich descriptions"
+  },
+  detailed: {
+    label: "Very Detailed",
+    targetWords: "120-150",
+    maxTokens: 600,
+    description: "Comprehensive prompt for DALL-E 3 and complex scenes"
+  },
+};
+
+// Get length-specific system prompt instructions
+function getPromptLengthInstructions(length: PromptLengthOption): string {
+  const config = promptLengthOptions[length];
+  
+  const instructions: Record<PromptLengthOption, string> = {
+    short: `Generate a CONCISE prompt with approximately ${config.targetWords} words. Focus on essential elements only: subject, style, and key atmosphere. No unnecessary adjectives.`,
+    medium: `Generate a BALANCED prompt with approximately ${config.targetWords} words. Include subject, style, mood, lighting, and composition details. Good balance of brevity and detail.`,
+    long: `Generate a DETAILED prompt with approximately ${config.targetWords} words. Include comprehensive descriptions: subject, style, mood, lighting, composition, atmosphere, textures, colors, and artistic direction.`,
+    detailed: `Generate a VERY DETAILED prompt with approximately ${config.targetWords} words. Be highly descriptive with extensive coverage of: subject, style, mood, lighting, composition, atmosphere, textures, colors, artistic techniques, camera angles, material qualities, and environmental details.`,
+  };
+  
+  return instructions[length];
+}
+
 interface GenerateOptions {
   apiKey: string;
   provider: ApiProvider;
@@ -20,6 +71,7 @@ interface GenerateOptions {
   baseUrl?: string;
   creativity?: number; // 1-5 scale
   backgroundStyle?: string; // Background style option
+  promptLength?: PromptLengthOption; // Prompt length option
 }
 
 interface BatchGenerateOptions extends GenerateOptions {
@@ -135,7 +187,8 @@ async function generateSinglePrompt({
   variationIndex,
   creativity = 3,
   backgroundStyle = "none",
-}: GenerateOptions & { variationIndex: number; creativity?: number; backgroundStyle?: string }): Promise<string> {
+  promptLength = "medium",
+}: GenerateOptions & { variationIndex: number; creativity?: number; backgroundStyle?: string; promptLength?: PromptLengthOption }): Promise<string> {
   // ========================================
   // SECURITY: Input validation and sanitization
   // ========================================
@@ -169,6 +222,11 @@ async function generateSinglePrompt({
   // Get background instruction
   const bgInstruction = backgroundInstructions[backgroundStyle] || "";
 
+  // Get prompt length configuration
+  const lengthConfig = promptLengthOptions[promptLength];
+  const lengthInstruction = getPromptLengthInstructions(promptLength);
+  const maxTokens = lengthConfig.maxTokens;
+
   const systemPrompt = getPromptTemplate(sanitizedPromptType, sanitizedUserInput);
   
   let baseUrl: string;
@@ -190,6 +248,9 @@ async function generateSinglePrompt({
   // Build the system instruction content
   const systemContent = `You are an expert prompt engineer. Generate a UNIQUE and CREATIVE prompt variation based on user input.
 This is variation #${variationIndex + 1} - make it distinctly different from other variations while keeping the core concept.
+
+PROMPT LENGTH REQUIREMENT (CRITICAL):
+${lengthInstruction}
 
 ABSOLUTE OUTPUT RULES - FOLLOW EXACTLY:
 1. Output ONLY the final prompt text - NOTHING ELSE
@@ -261,7 +322,7 @@ START YOUR RESPONSE DIRECTLY WITH THE PROMPT CONTENT.`;
         },
         generationConfig: {
           ...creativityParams,
-          maxOutputTokens: 500,
+          maxOutputTokens: maxTokens,
         },
       }),
     });
@@ -296,7 +357,7 @@ START YOUR RESPONSE DIRECTLY WITH THE PROMPT CONTENT.`;
           { role: "system", content: systemContent },
           { role: "user", content: systemPrompt },
         ],
-        max_tokens: 500,
+        max_tokens: maxTokens,
         ...creativityParams,
       }),
     });
@@ -335,6 +396,7 @@ export async function generatePromptBatch({
   onPromptReady,
   creativity,
   backgroundStyle,
+  promptLength,
 }: BatchGenerateOptions): Promise<string[]> {
   let completed = 0;
   const results: (string | null)[] = new Array(batchSize).fill(null);
@@ -353,6 +415,7 @@ export async function generatePromptBatch({
         variationIndex: index,
         creativity,
         backgroundStyle,
+        promptLength,
       });
       results[index] = result;
       completed++;
