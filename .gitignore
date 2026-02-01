@@ -40,6 +40,7 @@ service-account.json
 
 # Cloudflare
 .wrangler/
+wrangler.toml
 
 # Temporary files
 temp-*.js
