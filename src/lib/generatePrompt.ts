@@ -119,6 +119,67 @@ export const promptLengthOptions: Record<PromptLengthOption, PromptLengthConfig>
 // PROMPT LENGTH INSTRUCTIONS
 // ============================================================================
 
+/** Maximum retries for incomplete prompts */
+const MAX_RETRIES = 2;
+
+/** Minimum word percentage to consider prompt complete */
+const MIN_WORD_PERCENTAGE = 0.75; // 75% of target
+
+/**
+ * Check if prompt output is truncated/incomplete
+ * Returns true if the prompt appears to be cut off mid-sentence
+ */
+function isTruncated(text: string): boolean {
+  if (!text || text.length === 0) return true;
+  
+  const trimmed = text.trim();
+  if (trimmed.length === 0) return true;
+  
+  // Check for common truncation patterns
+  const lastChar = trimmed[trimmed.length - 1];
+  const last10Chars = trimmed.slice(-10).toLowerCase();
+  
+  // Incomplete sentence indicators
+  const incompletePatterns = [
+    /\s(the|a|an|in|on|at|to|for|of|with|and|or|but|as|if|is|are|was|were|be|been|being|have|has|had|will|would|could|should|may|might|must|shall|can)\s*$/i,
+    /\s(this|that|these|those|which|who|whom|whose|where|when|what|how|why)\s*$/i,
+    /\s(very|quite|rather|somewhat|extremely|highly|incredibly)\s*$/i,
+    /[,;:\-–—]\s*$/,  // Ends with punctuation that expects continuation
+  ];
+  
+  for (const pattern of incompletePatterns) {
+    if (pattern.test(trimmed)) {
+      return true;
+    }
+  }
+  
+  // Good endings: sentence-ending punctuation
+  const goodEndings = ['.', '!', '?', '"', "'", ')', ']'];
+  if (goodEndings.includes(lastChar)) {
+    return false;
+  }
+  
+  // If ends mid-word (no space before last word, no punctuation)
+  // Check if last "word" is incomplete by seeing if sentence feels complete
+  return true; // Conservative: assume truncated if not clearly complete
+}
+
+/**
+ * Count words in text
+ */
+function countWords(text: string): number {
+  return text.split(/\s+/).filter(Boolean).length;
+}
+
+/**
+ * Check if output meets minimum word count requirement
+ */
+function meetsWordCount(text: string, targetWords: number): boolean {
+  const actualWords = countWords(text);
+  const minRequired = Math.floor(targetWords * MIN_WORD_PERCENTAGE);
+  return actualWords >= minRequired;
+}
+
 /**
  * Get length-specific system prompt instructions based on target word count
  * @param targetWords - Target word count (10-500)
@@ -134,7 +195,30 @@ function getPromptLengthInstructions(targetWords: number): string {
   } else if (validatedLength <= 300) {
     return `Generate a DETAILED prompt with EXACTLY ${validatedLength} words (count them!). Be highly descriptive with comprehensive coverage of: subject, style, mood, lighting, composition, atmosphere, textures, colors, artistic techniques, and camera angles. You MUST reach the word count target.`;
   } else {
-    return `Generate a COMPREHENSIVE and EXTENSIVE prompt with EXACTLY ${validatedLength} words (count them!). This is a LONG prompt requirement. Be EXTREMELY detailed and thorough with exhaustive coverage of: subject (detailed description), artistic style, mood and emotion, lighting setup, composition and framing, atmosphere and ambiance, textures and materials, color palette, artistic techniques, camera angles and perspective, environmental details, time of day, weather, reflections, shadows, depth, foreground/background elements, and any other relevant visual details. DO NOT stop early - you MUST write the full ${validatedLength} words. Keep adding descriptive details until you reach the target.`;
+    // STRENGTHENED for 300+ words - this is the key fix
+    return `
+⚠️ CRITICAL LENGTH REQUIREMENT: Generate a prompt with EXACTLY ${validatedLength} words.
+
+MANDATORY RULES:
+1. You MUST write AT LEAST ${validatedLength} words - NO EXCEPTIONS
+2. DO NOT stop writing until you have reached ${validatedLength} words
+3. If you feel like stopping, ADD MORE DETAILS instead
+4. Count your words as you write - you need ${validatedLength} total
+5. NEVER end mid-sentence - always complete your thoughts
+6. Keep adding rich, descriptive content until target is met
+
+CONTENT TO INCLUDE (expand on ALL of these):
+- Subject: Detailed physical description, pose, expression, clothing, accessories
+- Environment: Setting, location, surroundings, foreground/background elements
+- Lighting: Type, direction, color, shadows, highlights, reflections
+- Atmosphere: Mood, emotion, feeling, ambiance, time of day
+- Style: Artistic style, medium, technique, influences
+- Colors: Palette, tones, saturation, contrast
+- Composition: Framing, perspective, depth of field, focus
+- Textures: Materials, surfaces, patterns, details
+- Technical: Camera settings, lens effects, film grain, resolution
+
+REMEMBER: ${validatedLength} words is a LONG prompt. Keep writing detailed descriptions until you reach the target. DO NOT STOP EARLY.`;
   }
 }
 
@@ -169,10 +253,21 @@ const backgroundInstructions: Record<string, string> = {
 };
 
 // Map creativity level (1-5) to temperature, top_p, top_k
-function getCreativityParams(creativity: number = 3) {
+// NOTE: For long-form content with Gemini, use lower temperatures to prevent 
+// early truncation caused by repetition loops that trigger MAX_TOKENS
+function getCreativityParams(creativity: number = 3, isLongForm: boolean = false) {
   const level = Math.max(1, Math.min(5, creativity));
   
-  const params = {
+  // Long-form content needs lower temperature to ensure complete output
+  // High temperature causes repetition loops that trigger MAX_TOKENS early
+  // This is a documented Gemini API issue
+  const params = isLongForm ? {
+    1: { temperature: 0.2, top_p: 0.8, top_k: 20 },   // Very focused
+    2: { temperature: 0.3, top_p: 0.85, top_k: 30 },  // Balanced-low
+    3: { temperature: 0.4, top_p: 0.9, top_k: 40 },   // Balanced (capped for stability)
+    4: { temperature: 0.5, top_p: 0.92, top_k: 50 },  // Creative (capped)
+    5: { temperature: 0.6, top_p: 0.95, top_k: 60 },  // Very creative (capped at 0.6)
+  } : {
     1: { temperature: 0.3, top_p: 0.7, top_k: 20 },   // Very focused
     2: { temperature: 0.5, top_p: 0.8, top_k: 30 },   // Balanced-low
     3: { temperature: 0.7, top_p: 0.9, top_k: 40 },   // Balanced
@@ -184,16 +279,19 @@ function getCreativityParams(creativity: number = 3) {
 }
 
 // Get creativity params formatted for specific provider
-function getCreativityParamsForProvider(creativity: number = 3, provider: ApiProvider) {
-  const base = getCreativityParams(creativity);
+// isLongForm: true for prompts >= 300 words (uses lower temp for Gemini stability)
+function getCreativityParamsForProvider(creativity: number = 3, provider: ApiProvider, isLongForm: boolean = false) {
+  const base = getCreativityParams(creativity, isLongForm && provider === "gemini");
   
   if (provider === "gemini") {
     // Gemini uses camelCase and different param names
-    // Note: topK may not be supported in all Gemini models, so we omit it
+    // For long-form content, we use lower temperature (already handled in getCreativityParams)
+    // Adding topK and candidateCount for better output control
     return {
       temperature: base.temperature,
       topP: base.top_p,
-      // topK is not reliably supported, omitting it
+      topK: base.top_k, // Re-enabled - supported in gemini-2.0-flash and 2.5-flash
+      candidateCount: 1, // Single focused response reduces truncation issues
     };
   }
   
@@ -325,19 +423,39 @@ async function generateSinglePrompt({
   }
 
   // Build the system instruction content
-  // For longer prompts (300+), use shorter system instructions to save tokens
+  // For longer prompts (300+), use STRONGER instructions with emphasis on not stopping
   const isLongPrompt = promptLength >= 300;
   
   const systemContent = isLongPrompt 
-    ? `Expert prompt engineer. Generate a ${promptLength}-word prompt variation #${variationIndex + 1}.
+    ? `You are an expert prompt engineer. Generate variation #${variationIndex + 1}.
 
-OUTPUT: Single continuous line, no formatting, no prefixes, pure prompt text only.
-LENGTH: EXACTLY ${promptLength} words - count them! Do NOT stop early.
+⚠️ CRITICAL: This prompt MUST be EXACTLY ${promptLength} words. DO NOT STOP EARLY.
+
+OUTPUT FORMAT:
+- Single continuous line, no formatting, no prefixes, pure prompt text only
+- NO explanations, NO introductions, NO "Here is" - just the prompt itself
+
+WORD COUNT REQUIREMENT (MANDATORY):
+- You MUST write ${promptLength} words - count as you write
+- If you feel like stopping, ADD MORE DESCRIPTIVE DETAILS instead
+- Keep expanding until you reach ${promptLength} words
+- NEVER end mid-sentence - complete every thought
+- A ${promptLength}-word prompt is LONG - keep going until done
+
+CONTENT (cover ALL of these in detail):
+- Subject: Detailed physical description, pose, expression, clothing, accessories
+- Environment: Setting, location, surroundings, foreground/background
+- Lighting: Type, direction, color, shadows, highlights, reflections  
+- Atmosphere: Mood, emotion, feeling, ambiance, time of day
+- Style: Artistic style, medium, technique, rendering
+- Colors: Palette, tones, saturation, contrast
+- Composition: Framing, perspective, depth, camera angle
+- Textures: Materials, surfaces, patterns, fine details
+
 IP SAFE: No real names, no copyrighted characters, no artist names, no brand names.
-QUALITY: Extremely detailed - cover subject, style, mood, lighting, composition, atmosphere, textures, colors, camera angles, environment.
 ${bgInstruction ? `BACKGROUND: ${bgInstruction}` : ''}
 
-START DIRECTLY with prompt content:`
+START NOW with the prompt content (${promptLength} words required):`
     : `You are an expert prompt engineer. Generate a UNIQUE and CREATIVE prompt variation based on user input.
 This is variation #${variationIndex + 1} - make it distinctly different from other variations while keeping the core concept.
 
@@ -393,30 +511,46 @@ START YOUR RESPONSE DIRECTLY WITH THE PROMPT CONTENT.`;
 
   if (provider === "gemini") {
     // Gemini uses a different API format
-    const modelName = sanitizedModel || getDefaultModel(provider);
+    // For long prompts, prefer gemini-2.5-flash (65K tokens) over 2.0-flash (8K tokens)
+    const modelName = sanitizedModel || getDefaultModel(provider, promptLength);
     const geminiUrl = `${baseUrl}/models/${modelName}:generateContent?key=${sanitizedApiKey}`;
-    const creativityParams = getCreativityParamsForProvider(creativity, "gemini");
+    
+    // Use isLongForm to get appropriate creativity params for Gemini
+    // Long-form content uses lower temperature to prevent MAX_TOKENS truncation
+    const creativityParams = getCreativityParamsForProvider(creativity, "gemini", isLongPrompt);
+    
+    const requestBody = {
+      contents: [
+        {
+          role: "user",
+          parts: [{ text: systemPrompt }]
+        }
+      ],
+      systemInstruction: {
+        parts: [{ text: systemContent }]
+      },
+      generationConfig: {
+        ...creativityParams,
+        maxOutputTokens: maxTokens,
+        // Note: stopSequences can help prevent incomplete outputs
+        // but we avoid adding them as they may cut off valid content
+      },
+    };
+    
+    // Debug: Log the full request (dev only)
+    if (import.meta.env.DEV) {
+      console.log(`[Gemini Request] URL: ${geminiUrl.replace(/key=.*$/, 'key=***')}`);
+      console.log(`[Gemini Request] generationConfig:`, requestBody.generationConfig);
+      console.log(`[Gemini Request] systemInstruction length: ${systemContent.length} chars`);
+      console.log(`[Gemini Request] user content length: ${systemPrompt.length} chars`);
+    }
     
     response = await fetch(geminiUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        contents: [
-          {
-            role: "user",
-            parts: [{ text: systemPrompt }]
-          }
-        ],
-        systemInstruction: {
-          parts: [{ text: systemContent }]
-        },
-        generationConfig: {
-          ...creativityParams,
-          maxOutputTokens: maxTokens,
-        },
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {
@@ -431,7 +565,27 @@ START YOUR RESPONSE DIRECTLY WITH THE PROMPT CONTENT.`;
     }
 
     const data = await response.json();
-    // Gemini response format: { candidates: [{ content: { parts: [{ text: "..." }] } }] }
+    
+    // Check finishReason - this is critical for detecting truncation
+    const finishReason = data.candidates?.[0]?.finishReason;
+    const usageMetadata = data.usageMetadata;
+    
+    // Debug: Log the full Gemini response (dev only)
+    if (import.meta.env.DEV) {
+      console.log(`[Gemini Response] finishReason: ${finishReason}, usageMetadata:`, usageMetadata);
+      console.log(`[Gemini Response] Full candidate:`, JSON.stringify(data.candidates?.[0], null, 2));
+      
+      // Warn if MAX_TOKENS but output seems too short
+      if (finishReason === "MAX_TOKENS") {
+        const outputTokens = usageMetadata?.candidatesTokenCount || 0;
+        console.warn(`[Gemini] MAX_TOKENS hit at ${outputTokens} tokens (limit: ${maxTokens})`);
+        if (outputTokens < maxTokens * 0.5) {
+          console.error(`[Gemini] ⚠️ OUTPUT TRUNCATED EARLY! Only ${outputTokens} tokens generated out of ${maxTokens} allowed. This is a known Gemini API issue.`);
+        }
+      }
+    }
+    
+    // Gemini response format: { candidates: [{ content: { parts: [{ text: \"...\" }] } }] }
     rawPrompt = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
   } else {
     // OpenAI-compatible API (OpenAI, Groq, OpenRouter, Custom)
@@ -468,10 +622,65 @@ START YOUR RESPONSE DIRECTLY WITH THE PROMPT CONTENT.`;
     const data = await response.json();
     // OpenAI response format: { choices: [{ message: { content: "..." } }] }
     rawPrompt = data.choices?.[0]?.message?.content || "";
+    
+    // Check finish_reason for OpenAI-compatible APIs
+    if (import.meta.env.DEV) {
+      const finishReason = data.choices?.[0]?.finish_reason;
+      console.log(`[OpenAI Response] finish_reason: ${finishReason}`);
+    }
   }
   
   // Parse and clean the prompt, then apply IP filter
-  const cleanedPrompt = parsePrompt(rawPrompt);
+  let cleanedPrompt = parsePrompt(rawPrompt);
+  
+  // ========================================
+  // VALIDATION: Check for truncation and insufficient length
+  // ========================================
+  const actualWordCount = countWords(cleanedPrompt);
+  const targetWords = validatePromptLength(promptLength);
+  const minRequired = Math.floor(targetWords * MIN_WORD_PERCENTAGE);
+  const promptIsTruncated = isTruncated(cleanedPrompt);
+  const promptTooShort = actualWordCount < minRequired;
+  
+  // Debug: Log validation results (dev only)
+  if (import.meta.env.DEV) {
+    console.log(`[Validation] Target: ${targetWords} words, Actual: ${actualWordCount} words, Min required: ${minRequired}`);
+    console.log(`[Validation] Truncated: ${promptIsTruncated}, Too short: ${promptTooShort}`);
+    if (promptIsTruncated) {
+      console.log(`[Validation] Last 50 chars: "...${cleanedPrompt.slice(-50)}"`);
+    }
+  }
+  
+  // If prompt is truncated or too short, try to fix it
+  if ((promptIsTruncated || promptTooShort) && targetWords >= 200) {
+    // Log warning
+    if (import.meta.env.DEV) {
+      console.warn(`[Validation] Prompt incomplete! Truncated: ${promptIsTruncated}, Words: ${actualWordCount}/${targetWords}`);
+    }
+    
+    // Try to complete the prompt by cleaning up the ending
+    if (promptIsTruncated && !promptTooShort) {
+      // Just needs ending cleanup - find last complete sentence
+      const sentences = cleanedPrompt.match(/[^.!?]*[.!?]/g);
+      if (sentences && sentences.length > 0) {
+        cleanedPrompt = sentences.join(' ').trim();
+        if (import.meta.env.DEV) {
+          console.log(`[Validation] Fixed by finding last complete sentence. New word count: ${countWords(cleanedPrompt)}`);
+        }
+      }
+    }
+  }
+  
+  // Debug: Log raw vs cleaned prompt length (dev only)
+  if (import.meta.env.DEV) {
+    const rawWordCount = rawPrompt.split(/\s+/).filter(Boolean).length;
+    const finalWordCount = countWords(cleanedPrompt);
+    console.log(`[parsePrompt] Raw words: ${rawWordCount}, Final words: ${finalWordCount}`);
+    if (rawWordCount > finalWordCount + 10) {
+      console.warn(`[parsePrompt] Significant word loss detected! Raw: "${rawPrompt.substring(0, 200)}..."`);
+    }
+  }
+  
   return sanitizePromptForIP(cleanedPrompt);
 }
 
@@ -768,12 +977,19 @@ function parsePrompt(text: string): string {
   return cleaned;
 }
 
-function getDefaultModel(provider: ApiProvider): string {
+function getDefaultModel(provider: ApiProvider, promptLength?: number): string {
   switch (provider) {
     case "openai":
       return "gpt-4o-mini";
     case "gemini":
-      return "gemini-2.0-flash";
+      // For long-form content (300+ words), prefer gemini-2.5-flash which has
+      // 65K output token limit and better handling of long content.
+      // gemini-2.0-flash has 8K limit and known truncation issues.
+      // NOTE: User can override this by selecting a specific model in settings.
+      if (promptLength && promptLength >= 300) {
+        return "gemini-2.5-flash"; // 65K output tokens, more stable for long content
+      }
+      return "gemini-2.0-flash"; // 8K output tokens, good for short/medium
     case "openrouter":
       return "openai/gpt-4o-mini";
     case "groq":
