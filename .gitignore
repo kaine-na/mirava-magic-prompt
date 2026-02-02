@@ -30,6 +30,9 @@ dist-ssr
 .env.production
 .env.development
 
+# Cloudflare Pages Functions secrets
+.dev.vars
+
 # Secrets and credentials
 *.pem
 *.key
@@ -40,7 +43,6 @@ service-account.json
 
 # Cloudflare
 .wrangler/
-wrangler.toml
 
 # Temporary files
 temp-*.js

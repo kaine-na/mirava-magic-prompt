@@ -141,14 +141,20 @@ export function sanitizeApiKey(
   // Validate format if provider is known
   if (provider && API_KEY_PATTERNS[provider]) {
     if (!API_KEY_PATTERNS[provider].test(cleaned)) {
-      console.warn(`[Sanitize] Invalid API key format for provider: ${provider}`);
+      // Only log in development - never expose key format details in production
+      if (import.meta.env.DEV) {
+        console.warn(`[Sanitize] Invalid API key format for provider: ${provider}`);
+      }
       // Still return the key but log warning - some providers may have different formats
     }
   }
 
   // Basic character validation - API keys should only contain safe characters
   if (!/^[a-zA-Z0-9_-]+$/.test(cleaned)) {
-    console.warn('[Sanitize] API key contains unexpected characters');
+    // Only log in development
+    if (import.meta.env.DEV) {
+      console.warn('[Sanitize] API key contains unexpected characters');
+    }
     // Remove any unexpected characters
     return cleaned.replace(/[^a-zA-Z0-9_-]/g, '');
   }
@@ -199,7 +205,10 @@ export function sanitizeUrl(
 
   // Remove any javascript: or data: prefixes
   if (/^(javascript|data|vbscript):/i.test(cleaned)) {
-    console.error('[Sanitize] Dangerous URL protocol detected');
+    // Only log in development - don't reveal attack detection in production
+    if (import.meta.env.DEV) {
+      console.error('[Sanitize] Dangerous URL protocol detected');
+    }
     return null;
   }
 
@@ -208,7 +217,10 @@ export function sanitizeUrl(
 
     // Check protocol
     if (requireHttps && !ALLOWED_PROTOCOLS.includes(parsed.protocol)) {
-      console.warn('[Sanitize] URL must use HTTPS');
+      // Only log in development
+      if (import.meta.env.DEV) {
+        console.warn('[Sanitize] URL must use HTTPS');
+      }
       return null;
     }
 
@@ -219,7 +231,10 @@ export function sanitizeUrl(
         parsed.hostname.endsWith('.' + domain)
       );
       if (!isAllowed) {
-        console.warn(`[Sanitize] URL domain not in whitelist: ${parsed.hostname}`);
+        // Only log in development - don't reveal whitelist details
+        if (import.meta.env.DEV) {
+          console.warn(`[Sanitize] URL domain not in whitelist: ${parsed.hostname}`);
+        }
         return null;
       }
     }
@@ -230,7 +245,10 @@ export function sanitizeUrl(
 
     return parsed.toString();
   } catch {
-    console.error('[Sanitize] Invalid URL format');
+    // Only log in development
+    if (import.meta.env.DEV) {
+      console.error('[Sanitize] Invalid URL format');
+    }
     return null;
   }
 }

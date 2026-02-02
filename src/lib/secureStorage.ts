@@ -252,13 +252,15 @@ export async function decrypt(encryptedJson: string): Promise<string | null> {
     
     // Version check for future compatibility
     if (envelope.v !== 1) {
-      console.warn('[SecureStorage] Unknown envelope version:', envelope.v);
+      if (import.meta.env.DEV) {
+        console.warn('[SecureStorage] Unknown envelope version:', envelope.v);
+      }
       return null;
     }
 
     // Check expiry
     if (envelope.exp && Date.now() > envelope.exp) {
-      console.warn('[SecureStorage] Data has expired');
+      // Don't log expiry - this is expected behavior
       return null;
     }
 
@@ -269,7 +271,10 @@ export async function decrypt(encryptedJson: string): Promise<string | null> {
     // Verify HMAC integrity
     const isValid = await verifyHmac(envelope.data + envelope.ts.toString(), envelope.hmac, hmacKey);
     if (!isValid) {
-      console.error('[SecureStorage] HMAC verification failed - data may be tampered');
+      // Security event - only log in dev, never expose details
+      if (import.meta.env.DEV) {
+        console.error('[SecureStorage] HMAC verification failed - data may be tampered');
+      }
       return null;
     }
 
@@ -284,8 +289,11 @@ export async function decrypt(encryptedJson: string): Promise<string | null> {
 
     const decoder = new TextDecoder();
     return decoder.decode(decrypted);
-  } catch (error) {
-    console.error('[SecureStorage] Decryption failed:', error);
+  } catch {
+    // Only log in development to prevent information leakage
+    if (import.meta.env.DEV) {
+      console.error('[SecureStorage] Decryption failed');
+    }
     return null;
   }
 }
@@ -332,7 +340,10 @@ export class SecureStorage {
       }
       this.inactivityTimer = setTimeout(() => {
         this.clearSensitiveData();
-        console.info('[SecureStorage] Sensitive data cleared due to inactivity');
+        // Only log in development
+        if (import.meta.env.DEV) {
+          console.info('[SecureStorage] Sensitive data cleared due to inactivity');
+        }
       }, this.inactivityTimeoutMs);
     };
 
@@ -354,7 +365,10 @@ export class SecureStorage {
       if (document.hidden) {
         // Optional: Clear on page hide (uncomment for maximum security)
         // this.clearSensitiveData();
-        console.debug('[SecureStorage] Page hidden - tracking inactivity');
+        // Only log in development
+        if (import.meta.env.DEV) {
+          console.debug('[SecureStorage] Page hidden - tracking inactivity');
+        }
       }
     });
 
@@ -459,7 +473,10 @@ export class SecureStorage {
 
       // Re-save with encryption
       await this.setItem(key, parsed);
-      console.info(`[SecureStorage] Migrated ${key} to encrypted storage`);
+      // Only log migration in development
+      if (import.meta.env.DEV) {
+        console.info(`[SecureStorage] Migrated ${key} to encrypted storage`);
+      }
       return true;
     } catch {
       return false;

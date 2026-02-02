@@ -4,7 +4,8 @@ This document outlines the security measures implemented in Mirava Magic Prompt 
 
 ## Table of Contents
 - [Security Architecture](#security-architecture)
-- [Supabase Security](#supabase-security)
+- [Credential Protection](#credential-protection)
+- [Cloudflare Pages Functions](#cloudflare-pages-functions)
 - [API Key Protection](#api-key-protection)
 - [Input Sanitization](#input-sanitization)
 - [Content Security Policy](#content-security-policy)
@@ -18,103 +19,155 @@ This document outlines the security measures implemented in Mirava Magic Prompt 
 
 ## Security Architecture
 
-PromptGen is a client-side application with no backend server. All processing happens in the browser, which presents unique security challenges:
+PromptGen uses a **Zero-Credential-Exposure Architecture** where all sensitive credentials are kept server-side via Cloudflare Pages Functions:
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                      USER'S BROWSER                          │
-├─────────────────────────────────────────────────────────────┤
-│  ┌─────────────┐    ┌──────────────┐    ┌───────────────┐  │
-│  │ React App   │───▶│ SecureStorage│───▶│  localStorage │  │
-│  │             │    │ (AES-256-GCM)│    │  (encrypted)  │  │
-│  └─────────────┘    └──────────────┘    └───────────────┘  │
-│         │                                                    │
-│         │ HTTPS only                                         │
-│         ▼                                                    │
-│  ┌─────────────────────────────────────────────────────┐    │
-│  │ CSP: Only allowed domains (OpenAI, Gemini, etc.)    │    │
-│  └─────────────────────────────────────────────────────┘    │
-└─────────────────────────────────────────────────────────────┘
-                          │
-                          │ HTTPS
-                          ▼
-              ┌───────────────────────┐
-              │   AI Provider APIs    │
-              │ (OpenAI, Gemini, etc.)│
-              └───────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────┐
+│                           USER'S BROWSER                                  │
+├─────────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────────┐                        ┌───────────────────────┐   │
+│  │   React App     │                        │   SecureStorage       │   │
+│  │                 │                        │   (AES-256-GCM)       │   │
+│  │  ❌ No Supabase │                        │   API Keys Only       │   │
+│  │     Credentials │                        │                       │   │
+│  └────────┬────────┘                        └───────────────────────┘   │
+│           │                                                              │
+│           │ HTTPS (No credentials in request)                           │
+└───────────┼──────────────────────────────────────────────────────────────┘
+            │
+            ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    CLOUDFLARE PAGES EDGE FUNCTIONS                       │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  /api/stats (GET/POST)          /api/stats/stream (SSE)                 │
+│  ┌──────────────────┐           ┌──────────────────┐                    │
+│  │ Increment/Fetch  │           │ Real-time        │                    │
+│  │ Stats            │           │ Updates          │                    │
+│  └────────┬─────────┘           └────────┬─────────┘                    │
+│           │                              │                               │
+│           │  ┌──────────────────────────────────────────┐               │
+│           └──│  🔐 SUPABASE_URL                         │               │
+│              │  🔐 SUPABASE_SERVICE_ROLE_KEY            │               │
+│              │                                          │               │
+│              │  (Stored in Cloudflare Environment)      │               │
+│              └──────────────────────────────────────────┘               │
+│                              │                                           │
+└──────────────────────────────┼───────────────────────────────────────────┘
+                               │
+                               ▼
+                    ┌───────────────────────┐
+                    │      SUPABASE         │
+                    │  - RLS Protected      │
+                    │  - RPC Functions      │
+                    │  - Stats Table        │
+                    └───────────────────────┘
 ```
 
 ### Key Security Layers
 
-1. **Encryption at Rest** - API keys encrypted with AES-256-GCM
-2. **Input Sanitization** - All user inputs sanitized before storage
-3. **Content Security Policy** - Restricts script execution and API endpoints
-4. **HMAC Integrity** - Detects tampering of stored data
-5. **TTL/Expiry** - Automatic cleanup of old data
-6. **Inactivity Timeout** - Clears sensitive data after inactivity
-7. **Row Level Security (RLS)** - Supabase data protected by RLS policies
+1. **Zero Client Credentials** - No Supabase URL or keys in client bundle
+2. **Edge Function Proxy** - All database calls go through Cloudflare
+3. **Service Role Key** - Server-side only, enables controlled operations
+4. **Encryption at Rest** - User API keys encrypted with AES-256-GCM
+5. **Input Sanitization** - All user inputs sanitized before storage
+6. **Content Security Policy** - Restricts script execution and API endpoints
+7. **HMAC Integrity** - Detects tampering of stored data
 
 ---
 
-## Supabase Security
+## Credential Protection
 
-### ✅ Anon Key is SAFE to Expose
+### ✅ Zero-Exposure Architecture
 
-The Supabase `anon` key visible in browser console/network tab is **NOT a security vulnerability**. This is by design:
+**All Supabase credentials are 100% hidden from the client:**
 
-#### Why It's Safe:
+| What | Before (Exposed) | After (Hidden) |
+|------|-----------------|----------------|
+| Supabase URL | ❌ In client bundle | ✅ Server-side only |
+| Supabase Key | ❌ In DevTools | ✅ Server-side only |
+| Network Tab | ❌ Shows credentials | ✅ Shows only `/api/*` |
+| Console | ❌ May leak info | ✅ No credentials |
 
-1. **Public Key by Design**
-   - Supabase explicitly states the anon key is meant for client-side use
-   - Similar to Firebase API Key - designed to be public
-   - [Supabase Docs: API Keys](https://supabase.com/docs/guides/api/api-keys)
+### How It Works
 
-2. **Row Level Security (RLS) Protects Data**
-   ```sql
-   -- Our stats table has RLS enabled
-   ALTER TABLE stats ENABLE ROW LEVEL SECURITY;
-   
-   -- Only SELECT is allowed publicly
-   CREATE POLICY "Allow public read" ON stats FOR SELECT USING (true);
-   
-   -- No INSERT/UPDATE/DELETE policies = no direct writes allowed
-   ```
+1. **Client makes request** to `/api/stats`
+2. **Edge function receives request** (no credentials exposed)
+3. **Edge function uses env vars** to connect to Supabase
+4. **Supabase responds** to edge function
+5. **Edge function returns** sanitized response to client
 
-3. **Atomic Operations via RPC**
-   ```sql
-   -- increment_prompt_count() uses SECURITY DEFINER
-   -- This means it runs with elevated privileges
-   -- But ONLY does what the function allows (increment by 1)
-   CREATE FUNCTION increment_prompt_count()
-   RETURNS BIGINT
-   SECURITY DEFINER  -- Runs as function owner, not caller
-   ```
+### What's Visible in DevTools
 
-4. **What Attackers CANNOT Do:**
-   - ❌ Read user data (we don't store any)
-   - ❌ Modify the counter arbitrarily (only +1 via RPC)
-   - ❌ Delete data (no DELETE policy)
-   - ❌ Insert fake records (no INSERT policy)
-   - ❌ Access other tables (RLS blocks it)
+```
+Network Tab:
+✅ POST /api/stats         → 200 OK (increment)
+✅ GET  /api/stats         → 200 OK (fetch)
+✅ GET  /api/stats/stream  → SSE connection
 
-5. **What Attackers CAN Do (by design):**
-   - ✅ Read the global stats counter (public info)
-   - ✅ Increment counter by 1 (intended behavior)
-   - ✅ Connect to presence channel (for online count)
+❌ No Supabase URLs visible
+❌ No API keys visible
+❌ No WebSocket connections to Supabase
+```
 
-### WebSocket Connection URLs
+---
 
-The `wss://xxx.supabase.co/realtime/...` URLs visible in console are:
-- Required for real-time functionality
-- Protected by the same RLS policies
-- Cannot be exploited without valid RLS permissions
+## Cloudflare Pages Functions
 
-### Best Practices Implemented
+### Function: `/api/stats`
 
-1. **No console.log of sensitive data** - We removed all logging
-2. **Minimal RLS permissions** - Only what's needed
-3. **SECURITY DEFINER for RPC** - Controlled privilege escalation
-4. **No user PII stored** - Only anonymous counters
+Handles stats operations without exposing credentials:
+
+```typescript
+// functions/api/stats.ts
+
+// GET - Fetch current stats
+// POST - Increment prompt count
+
+// Credentials from Cloudflare environment:
+const supabase = createClient(
+  env.SUPABASE_URL,              // Never sent to client
+  env.SUPABASE_SERVICE_ROLE_KEY  // Never sent to client
+);
+```
+
+### Function: `/api/stats/stream`
+
+Server-Sent Events for real-time updates:
+
+```typescript
+// functions/api/stats/stream.ts
+
+// Polls Supabase every 3 seconds
+// Pushes updates to client via SSE
+// Auto-reconnects after 25 seconds (Worker limit)
+```
+
+### Setting Up Environment Variables
+
+**In Cloudflare Dashboard:**
+
+1. Go to **Pages** → **Your Project** → **Settings**
+2. Click **Environment Variables**
+3. Add for **Production**:
+   - `SUPABASE_URL` = `https://xxx.supabase.co`
+   - `SUPABASE_SERVICE_ROLE_KEY` = `eyJhbGciOiJIUzI1NiIs...`
+
+⚠️ **Use SERVICE_ROLE_KEY, not anon key** - Server-side only!
+
+### Why Service Role Key is Safe Here
+
+```
+┌─────────────────────────────────────────────────────────┐
+│ Service Role Key                                         │
+├─────────────────────────────────────────────────────────┤
+│ ✅ Full access to Supabase                               │
+│ ❌ NEVER expose to client (we don't!)                   │
+│ ✅ Only accessible in edge function environment          │
+│ ✅ Edge function controls what operations are allowed    │
+│ ✅ RPC function limits operations to +1 increment        │
+└─────────────────────────────────────────────────────────┘
+```
 
 ---
 

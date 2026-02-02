@@ -1,0 +1,22 @@
+# Wrangler Configuration for Cloudflare Pages Functions
+# https://developers.cloudflare.com/pages/functions/wrangler-configuration/
+
+name = "mirava-magic-prompt"
+compatibility_date = "2024-01-01"
+
+# Functions configuration
+[build]
+command = "npm run build"
+
+# Local development settings
+[dev]
+port = 8788
+local_protocol = "http"
+
+# Environment variables for local development
+# These should NOT be committed - use .dev.vars file instead
+# See: https://developers.cloudflare.com/pages/functions/bindings/#interact-with-your-environment-variables-locally
+
+# Production environment variables are set in Cloudflare Dashboard:
+# - SUPABASE_URL
+# - SUPABASE_SERVICE_ROLE_KEY

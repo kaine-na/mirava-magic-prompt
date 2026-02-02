@@ -1,0 +1,13 @@
+# Local Development Environment Variables for Cloudflare Pages Functions
+# https://developers.cloudflare.com/pages/functions/bindings/#interact-with-your-environment-variables-locally
+#
+# Copy this file to .dev.vars and fill in your values
+# .dev.vars is gitignored and will NOT be committed
+
+# Supabase Configuration (get from Supabase Dashboard > Project Settings > API)
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key-here
+
+# ⚠️  WARNING: The SERVICE_ROLE_KEY has full access to your database!
+# Only use this for server-side operations (which is exactly what we do here).
+# Never expose this key to the client.

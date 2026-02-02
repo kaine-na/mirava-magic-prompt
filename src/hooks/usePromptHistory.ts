@@ -84,10 +84,16 @@ function validateStoredData(data: unknown): PromptHistoryItem[] {
     if (result.success) {
       return result.data;
     }
-    console.warn("[PromptHistory] Data validation failed:", result.error.message);
+    // Only log in development
+    if (import.meta.env.DEV) {
+      console.warn("[PromptHistory] Data validation failed:", result.error.message);
+    }
     return [];
   } catch {
-    console.warn("[PromptHistory] Data validation error");
+    // Only log in development
+    if (import.meta.env.DEV) {
+      console.warn("[PromptHistory] Data validation error");
+    }
     return [];
   }
 }
@@ -158,8 +164,11 @@ function readFromStorage(): PromptHistoryItem[] {
     }
     
     return cleaned;
-  } catch (error) {
-    console.warn("[PromptHistory] Failed to read from storage:", error);
+  } catch {
+    // Only log in development
+    if (import.meta.env.DEV) {
+      console.warn("[PromptHistory] Failed to read from storage");
+    }
     // Corrupted data - clear it
     try {
       localStorage.removeItem(HISTORY_STORAGE_KEY);
@@ -181,7 +190,10 @@ function writeToStorage(items: PromptHistoryItem[]): boolean {
   } catch (error) {
     // Handle quota exceeded error
     if (error instanceof DOMException && error.name === "QuotaExceededError") {
-      console.error("[PromptHistory] Storage quota exceeded. Attempting cleanup...");
+      // Only log in development
+      if (import.meta.env.DEV) {
+        console.error("[PromptHistory] Storage quota exceeded. Attempting cleanup...");
+      }
       // Try to remove oldest non-favorite items
       const reduced = items
         .sort((a, b) => {
@@ -197,11 +209,17 @@ function writeToStorage(items: PromptHistoryItem[]): boolean {
         localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(reduced));
         return true;
       } catch {
-        console.error("[PromptHistory] Failed to save even with reduced data");
+        // Only log in development
+        if (import.meta.env.DEV) {
+          console.error("[PromptHistory] Failed to save even with reduced data");
+        }
         return false;
       }
     }
-    console.error("[PromptHistory] Failed to save to storage:", error);
+    // Only log in development
+    if (import.meta.env.DEV) {
+      console.error("[PromptHistory] Failed to save to storage");
+    }
     return false;
   }
 }

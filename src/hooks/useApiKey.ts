@@ -84,7 +84,10 @@ export function useApiKey() {
               const parsed = JSON.parse(legacyKeys);
               // Check if it's not an encrypted envelope
               if (!parsed.v || !parsed.iv) {
-                console.info('[useApiKey] Migrating legacy unencrypted API keys...');
+                // Only log migration in development
+                if (import.meta.env.DEV) {
+                  console.info('[useApiKey] Migrating legacy unencrypted API keys...');
+                }
                 // Sanitize keys before migration
                 const sanitizedKeys: ApiKeys = {};
                 for (const [prov, key] of Object.entries(parsed)) {
@@ -119,8 +122,11 @@ export function useApiKey() {
         if (storedCustomModelId) {
           setSelectedCustomModelIdState(sanitizeModelName(storedCustomModelId));
         }
-      } catch (error) {
-        console.error('[useApiKey] Error loading stored data:', error);
+      } catch {
+        // Only log in development to prevent information leakage
+        if (import.meta.env.DEV) {
+          console.error('[useApiKey] Error loading stored data');
+        }
         // Clear potentially corrupted data
         setApiKeysState({});
       } finally {
@@ -139,7 +145,10 @@ export function useApiKey() {
     // Sanitize the key before storage
     const sanitizedKey = sanitizeApiKey(key, prov);
     if (!sanitizedKey) {
-      console.warn(`[useApiKey] Invalid API key format for ${prov}`);
+      // Only log in development
+      if (import.meta.env.DEV) {
+        console.warn(`[useApiKey] Invalid API key format for ${prov}`);
+      }
       return false;
     }
 
@@ -151,8 +160,11 @@ export function useApiKey() {
       await secureStorage.setItem(API_KEYS_STORAGE_KEY, updated, API_KEY_TTL_MS);
       setSecurityStatus(prev => ({ ...prev, isKeyEncrypted: true }));
       return true;
-    } catch (error) {
-      console.error('[useApiKey] Failed to store encrypted API key:', error);
+    } catch {
+      // Only log in development
+      if (import.meta.env.DEV) {
+        console.error('[useApiKey] Failed to store encrypted API key');
+      }
       // Fallback to in-memory only (do NOT store unencrypted)
       return false;
     }
@@ -164,7 +176,10 @@ export function useApiKey() {
 
   const setProvider = useCallback((prov: ApiProvider) => {
     if (!isValidProvider(prov)) {
-      console.warn(`[useApiKey] Invalid provider: ${prov}`);
+      // Only log in development
+      if (import.meta.env.DEV) {
+        console.warn(`[useApiKey] Invalid provider: ${prov}`);
+      }
       return;
     }
     setProviderState(prov);
@@ -199,8 +214,11 @@ export function useApiKey() {
       } else {
         secureStorage.removeItem(API_KEYS_STORAGE_KEY);
       }
-    } catch (error) {
-      console.error('[useApiKey] Failed to update stored keys:', error);
+    } catch {
+      // Only log in development
+      if (import.meta.env.DEV) {
+        console.error('[useApiKey] Failed to update stored keys');
+      }
     }
 
     if (provider === prov) {
