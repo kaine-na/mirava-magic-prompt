@@ -1,9 +1,10 @@
-# Security Best Practices for PromptGen
+# Security Best Practices for Mirava Magic Prompt
 
-This document outlines the security measures implemented in PromptGen and provides guidance for maintaining a secure client-side application.
+This document outlines the security measures implemented in Mirava Magic Prompt and provides guidance for maintaining a secure client-side application.
 
 ## Table of Contents
 - [Security Architecture](#security-architecture)
+- [Supabase Security](#supabase-security)
 - [API Key Protection](#api-key-protection)
 - [Input Sanitization](#input-sanitization)
 - [Content Security Policy](#content-security-policy)
@@ -51,6 +52,69 @@ PromptGen is a client-side application with no backend server. All processing ha
 4. **HMAC Integrity** - Detects tampering of stored data
 5. **TTL/Expiry** - Automatic cleanup of old data
 6. **Inactivity Timeout** - Clears sensitive data after inactivity
+7. **Row Level Security (RLS)** - Supabase data protected by RLS policies
+
+---
+
+## Supabase Security
+
+### ✅ Anon Key is SAFE to Expose
+
+The Supabase `anon` key visible in browser console/network tab is **NOT a security vulnerability**. This is by design:
+
+#### Why It's Safe:
+
+1. **Public Key by Design**
+   - Supabase explicitly states the anon key is meant for client-side use
+   - Similar to Firebase API Key - designed to be public
+   - [Supabase Docs: API Keys](https://supabase.com/docs/guides/api/api-keys)
+
+2. **Row Level Security (RLS) Protects Data**
+   ```sql
+   -- Our stats table has RLS enabled
+   ALTER TABLE stats ENABLE ROW LEVEL SECURITY;
+   
+   -- Only SELECT is allowed publicly
+   CREATE POLICY "Allow public read" ON stats FOR SELECT USING (true);
+   
+   -- No INSERT/UPDATE/DELETE policies = no direct writes allowed
+   ```
+
+3. **Atomic Operations via RPC**
+   ```sql
+   -- increment_prompt_count() uses SECURITY DEFINER
+   -- This means it runs with elevated privileges
+   -- But ONLY does what the function allows (increment by 1)
+   CREATE FUNCTION increment_prompt_count()
+   RETURNS BIGINT
+   SECURITY DEFINER  -- Runs as function owner, not caller
+   ```
+
+4. **What Attackers CANNOT Do:**
+   - ❌ Read user data (we don't store any)
+   - ❌ Modify the counter arbitrarily (only +1 via RPC)
+   - ❌ Delete data (no DELETE policy)
+   - ❌ Insert fake records (no INSERT policy)
+   - ❌ Access other tables (RLS blocks it)
+
+5. **What Attackers CAN Do (by design):**
+   - ✅ Read the global stats counter (public info)
+   - ✅ Increment counter by 1 (intended behavior)
+   - ✅ Connect to presence channel (for online count)
+
+### WebSocket Connection URLs
+
+The `wss://xxx.supabase.co/realtime/...` URLs visible in console are:
+- Required for real-time functionality
+- Protected by the same RLS policies
+- Cannot be exploited without valid RLS permissions
+
+### Best Practices Implemented
+
+1. **No console.log of sensitive data** - We removed all logging
+2. **Minimal RLS permissions** - Only what's needed
+3. **SECURITY DEFINER for RPC** - Controlled privilege escalation
+4. **No user PII stored** - Only anonymous counters
 
 ---
 
@@ -161,7 +225,9 @@ CSP is configured in `index.html` to restrict what resources can be loaded:
     https://api.openai.com 
     https://generativelanguage.googleapis.com 
     https://openrouter.ai 
-    https://api.groq.com;
+    https://api.groq.com
+    https://*.supabase.co
+    wss://*.supabase.co;
   frame-ancestors 'none';
   form-action 'self';
   base-uri 'self';
