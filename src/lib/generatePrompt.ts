@@ -28,33 +28,35 @@ export const MAX_PROMPT_LENGTH = 500;
 export const MIN_TOKENS = 100;
 
 /** Maximum tokens to generate */
-export const MAX_TOKENS = 2500;
+export const MAX_TOKENS = 4000;
 
 /**
  * Calculate max_tokens based on target word count.
- * Uses approximately 3.5x multiplier for comprehensive output.
+ * Uses approximately 5x multiplier for comprehensive output.
  * 
- * Why 3.5x? 
+ * Why 5x? 
  * - Average word is ~1.3 tokens
- * - System instructions and formatting overhead
- * - Ensures model has room for full, detailed prompts
+ * - System instructions take ~300-400 tokens
+ * - Template prompt takes ~100-200 tokens
+ * - Need buffer for model overhead
+ * - Higher multiplier ensures prompt is never cut off
  * 
- * Formula: maxTokens = Math.ceil(targetWords * 3.5)
- * Clamped between MIN_TOKENS (100) and MAX_TOKENS (2500)
+ * Formula: maxTokens = Math.ceil(targetWords * 5)
+ * Clamped between MIN_TOKENS (100) and MAX_TOKENS (4000)
  * 
  * @param targetWords - Target word count (10-500)
  * @returns Calculated max_tokens value
  * 
  * @example
- * calculateMaxTokens(50)  // returns 175
- * calculateMaxTokens(100) // returns 350
- * calculateMaxTokens(200) // returns 700
- * calculateMaxTokens(300) // returns 1050
- * calculateMaxTokens(500) // returns 1750
+ * calculateMaxTokens(50)  // returns 250
+ * calculateMaxTokens(100) // returns 500
+ * calculateMaxTokens(200) // returns 1000
+ * calculateMaxTokens(300) // returns 1500
+ * calculateMaxTokens(500) // returns 2500
  */
 export function calculateMaxTokens(targetWords: number): number {
   const clampedWords = Math.max(MIN_PROMPT_LENGTH, Math.min(MAX_PROMPT_LENGTH, targetWords));
-  const calculatedTokens = Math.ceil(clampedWords * 3.5);
+  const calculatedTokens = Math.ceil(clampedWords * 5);
   return Math.max(MIN_TOKENS, Math.min(MAX_TOKENS, calculatedTokens));
 }
 
@@ -318,7 +320,20 @@ async function generateSinglePrompt({
   }
 
   // Build the system instruction content
-  const systemContent = `You are an expert prompt engineer. Generate a UNIQUE and CREATIVE prompt variation based on user input.
+  // For longer prompts (300+), use shorter system instructions to save tokens
+  const isLongPrompt = promptLength >= 300;
+  
+  const systemContent = isLongPrompt 
+    ? `Expert prompt engineer. Generate a ${promptLength}-word prompt variation #${variationIndex + 1}.
+
+OUTPUT: Single continuous line, no formatting, no prefixes, pure prompt text only.
+LENGTH: EXACTLY ${promptLength} words - count them! Do NOT stop early.
+IP SAFE: No real names, no copyrighted characters, no artist names, no brand names.
+QUALITY: Extremely detailed - cover subject, style, mood, lighting, composition, atmosphere, textures, colors, camera angles, environment.
+${bgInstruction ? `BACKGROUND: ${bgInstruction}` : ''}
+
+START DIRECTLY with prompt content:`
+    : `You are an expert prompt engineer. Generate a UNIQUE and CREATIVE prompt variation based on user input.
 This is variation #${variationIndex + 1} - make it distinctly different from other variations while keeping the core concept.
 
 PROMPT LENGTH REQUIREMENT (CRITICAL):
