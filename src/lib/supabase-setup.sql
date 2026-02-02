@@ -13,9 +13,10 @@
 --
 -- ============================================================================
 
--- Drop existing objects if they exist (for clean reinstall)
+-- Drop existing function if exists
 DROP FUNCTION IF EXISTS increment_prompt_count();
-DROP POLICY IF EXISTS "Allow public read" ON stats;
+
+-- Drop table (this will also drop associated policies)
 DROP TABLE IF EXISTS stats;
 
 -- Create stats table
@@ -55,10 +56,19 @@ $$;
 
 -- Enable realtime subscriptions for the stats table
 -- This allows clients to receive instant updates when stats change
-ALTER PUBLICATION supabase_realtime ADD TABLE stats;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables 
+    WHERE pubname = 'supabase_realtime' AND tablename = 'stats'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE stats;
+  END IF;
+END $$;
 
 -- ============================================================================
--- Verification Query (run this to verify setup)
+-- Verification: Run these queries separately to verify setup
 -- ============================================================================
 -- SELECT * FROM stats WHERE id = 'global';
--- SELECT increment_prompt_count(); -- Test the increment function
+-- SELECT increment_prompt_count();
+-- SELECT * FROM stats WHERE id = 'global';
