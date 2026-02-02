@@ -27,36 +27,36 @@ export const MAX_PROMPT_LENGTH = 500;
 /** Minimum tokens to generate */
 export const MIN_TOKENS = 100;
 
-/** Maximum tokens to generate */
-export const MAX_TOKENS = 4000;
+/** Maximum tokens to generate - set high to accommodate all models */
+export const MAX_TOKENS = 8192;
 
 /**
  * Calculate max_tokens based on target word count.
- * Uses approximately 5x multiplier for comprehensive output.
+ * Uses approximately 8x multiplier to ensure prompt is never cut off.
  * 
- * Why 5x? 
+ * Why 8x? 
  * - Average word is ~1.3 tokens
- * - System instructions take ~300-400 tokens
- * - Template prompt takes ~100-200 tokens
- * - Need buffer for model overhead
- * - Higher multiplier ensures prompt is never cut off
+ * - System instructions take ~300-500 tokens  
+ * - Template prompt takes ~100-300 tokens
+ * - Model overhead and safety buffer
+ * - Many models have 4K-8K output limits, we want to use most of it
  * 
- * Formula: maxTokens = Math.ceil(targetWords * 5)
- * Clamped between MIN_TOKENS (100) and MAX_TOKENS (4000)
+ * Formula: maxTokens = Math.ceil(targetWords * 8)
+ * Clamped between MIN_TOKENS (100) and MAX_TOKENS (8192)
  * 
  * @param targetWords - Target word count (10-500)
  * @returns Calculated max_tokens value
  * 
  * @example
- * calculateMaxTokens(50)  // returns 250
- * calculateMaxTokens(100) // returns 500
- * calculateMaxTokens(200) // returns 1000
- * calculateMaxTokens(300) // returns 1500
- * calculateMaxTokens(500) // returns 2500
+ * calculateMaxTokens(50)  // returns 400
+ * calculateMaxTokens(100) // returns 800
+ * calculateMaxTokens(200) // returns 1600
+ * calculateMaxTokens(300) // returns 2400
+ * calculateMaxTokens(500) // returns 4000
  */
 export function calculateMaxTokens(targetWords: number): number {
   const clampedWords = Math.max(MIN_PROMPT_LENGTH, Math.min(MAX_PROMPT_LENGTH, targetWords));
-  const calculatedTokens = Math.ceil(clampedWords * 5);
+  const calculatedTokens = Math.ceil(clampedWords * 8);
   return Math.max(MIN_TOKENS, Math.min(MAX_TOKENS, calculatedTokens));
 }
 
@@ -300,6 +300,11 @@ async function generateSinglePrompt({
 
   // Get prompt length configuration
   const maxTokens = calculateMaxTokens(promptLength);
+  
+  // Debug: Log the calculated max tokens (dev only)
+  if (import.meta.env.DEV) {
+    console.log(`[generatePrompt] promptLength: ${promptLength}, maxTokens: ${maxTokens}, provider: ${provider}`);
+  }
 
   const systemPrompt = getPromptTemplate(sanitizedPromptType, sanitizedUserInput);
   
