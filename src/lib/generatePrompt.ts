@@ -651,24 +651,23 @@ START YOUR RESPONSE DIRECTLY WITH THE PROMPT CONTENT.`;
     }
   }
   
-  // If prompt is truncated or too short, try to fix it
+  // If prompt is truncated or too short, LOG WARNING but DO NOT remove content
   if ((promptIsTruncated || promptTooShort) && targetWords >= 200) {
-    // Log warning
+    // Log warning - but KEEP the full AI response (we paid for those tokens!)
     if (import.meta.env.DEV) {
-      console.warn(`[Validation] Prompt incomplete! Truncated: ${promptIsTruncated}, Words: ${actualWordCount}/${targetWords}`);
+      console.warn(`[Validation] ⚠️ INCOMPLETE OUTPUT DETECTED!`);
+      console.warn(`[Validation] Truncated: ${promptIsTruncated}, Words: ${actualWordCount}/${targetWords}`);
+      console.warn(`[Validation] Last 100 chars: "...${cleanedPrompt.slice(-100)}"`);
+      console.warn(`[Validation] This likely means the AI model stopped early. Consider:`);
+      console.warn(`[Validation] - Using a different model (e.g., gemini-2.5-flash for long prompts)`);
+      console.warn(`[Validation] - Reducing target word count`);
+      console.warn(`[Validation] - Lowering creativity level`);
+      console.warn(`[Validation] RETURNING FULL AI OUTPUT (not removing incomplete ending)`);
     }
     
-    // Try to complete the prompt by cleaning up the ending
-    if (promptIsTruncated && !promptTooShort) {
-      // Just needs ending cleanup - find last complete sentence
-      const sentences = cleanedPrompt.match(/[^.!?]*[.!?]/g);
-      if (sentences && sentences.length > 0) {
-        cleanedPrompt = sentences.join(' ').trim();
-        if (import.meta.env.DEV) {
-          console.log(`[Validation] Fixed by finding last complete sentence. New word count: ${countWords(cleanedPrompt)}`);
-        }
-      }
-    }
+    // IMPORTANT: Do NOT remove content! Return what the AI generated.
+    // Users paid for these tokens - truncating further is wasteful.
+    // The incomplete ending is better than missing content.
   }
   
   // Debug: Log raw vs cleaned prompt length (dev only)
