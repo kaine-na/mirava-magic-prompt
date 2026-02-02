@@ -20,5 +20,54 @@ export default defineConfig(({ mode }) => ({
     outDir: 'dist',
     assetsDir: 'assets',
     sourcemap: false,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // React core - rarely changes
+          'vendor-react': ['react', 'react-dom'],
+          
+          // Router - separate chunk
+          'vendor-router': ['react-router-dom'],
+          
+          // UI libraries - radix components
+          'vendor-radix': [
+            '@radix-ui/react-accordion',
+            '@radix-ui/react-alert-dialog',
+            '@radix-ui/react-checkbox',
+            '@radix-ui/react-collapsible',
+            '@radix-ui/react-dialog',
+            '@radix-ui/react-dropdown-menu',
+            '@radix-ui/react-label',
+            '@radix-ui/react-popover',
+            '@radix-ui/react-scroll-area',
+            '@radix-ui/react-select',
+            '@radix-ui/react-separator',
+            '@radix-ui/react-slider',
+            '@radix-ui/react-slot',
+            '@radix-ui/react-switch',
+            '@radix-ui/react-tabs',
+            '@radix-ui/react-toast',
+            '@radix-ui/react-tooltip',
+          ],
+          
+          // Icons - separate chunk (large)
+          'vendor-icons': ['lucide-react'],
+          
+          // Supabase - only loaded when needed
+          'vendor-supabase': ['@supabase/supabase-js'],
+          
+          // Query/state management
+          'vendor-query': ['@tanstack/react-query'],
+          
+          // Utilities
+          'vendor-utils': [
+            'clsx',
+            'tailwind-merge',
+            'class-variance-authority',
+            'date-fns',
+          ],
+        },
+      },
+    },
   },
 }));
