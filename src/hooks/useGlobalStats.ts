@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   GlobalStats,
   isSecureStatsEnabled,
+  isSecureStatsEnabledAsync,
   getStats,
   incrementPromptCount,
   subscribeToStats,
@@ -38,26 +39,27 @@ function initializePresence(): void {
   if (presenceInitialized) return;
   presenceInitialized = true;
   
-  console.log('[useGlobalStats] Initializing global presence tracking');
+  if (import.meta.env.DEV) {
+    console.log('[useGlobalStats] Initializing global presence tracking');
+  }
   
   const handlePresenceChange = (online: number, generating: number) => {
-    console.log('[useGlobalStats] Presence changed - online:', online, 'generating:', generating);
+    if (import.meta.env.DEV) {
+      console.log('[useGlobalStats] Presence changed - online:', online, 'generating:', generating);
+    }
     presenceCallbacks.forEach(callback => {
       try {
         callback(online, generating);
       } catch (e) {
-        console.error('[useGlobalStats] Error in presence callback:', e);
+        if (import.meta.env.DEV) {
+          console.error('[useGlobalStats] Error in presence callback:', e);
+        }
       }
     });
   };
   
-  if (isSecureStatsEnabled()) {
-    // In secure mode, presence uses demo mode (WebSocket can't be proxied)
-    singletonPresenceManager = trackPresence(handlePresenceChange);
-  } else {
-    // In demo mode
-    singletonPresenceManager = trackPresence(handlePresenceChange);
-  }
+  // Presence always uses demo mode (WebSocket can't be proxied through edge functions)
+  singletonPresenceManager = trackPresence(handlePresenceChange);
 }
 
 /**
@@ -66,7 +68,9 @@ function initializePresence(): void {
 function cleanupPresence(): void {
   if (!presenceInitialized) return;
   
-  console.log('[useGlobalStats] Cleaning up global presence tracking');
+  if (import.meta.env.DEV) {
+    console.log('[useGlobalStats] Cleaning up global presence tracking');
+  }
   presenceInitialized = false;
   
   singletonPresenceManager?.cleanup();
@@ -104,91 +108,124 @@ export function useGlobalStats() {
   
   // Track if this hook instance has set up presence
   const presenceSetupRef = useRef(false);
+  const cleanupRef = useRef<(() => void) | null>(null);
 
   // Initialize based on whether secure stats is enabled
   useEffect(() => {
-    const secureEnabled = isSecureStatsEnabled();
-    setIsDemoMode(!secureEnabled);
+    let isMounted = true;
     
-    // Set up presence callback for this component
-    const presenceCallback: PresenceCallback = (onlineCount, generatingCount) => {
-      setStats((prev) => ({
-        ...prev,
-        onlineUsers: Math.max(1, onlineCount),
-        generatingUsers: generatingCount,
-      }));
-    };
-    
-    // Register presence callback
-    presenceCallbacks.add(presenceCallback);
-    presenceSubscriberCount++;
-    console.log('[useGlobalStats] Subscriber count:', presenceSubscriberCount);
-    
-    // Initialize presence if this is the first subscriber
-    if (!presenceSetupRef.current) {
-      presenceSetupRef.current = true;
-      initializePresence();
-    }
-    
-    if (secureEnabled) {
-      // ============================================
-      // SECURE MODE (Cloudflare Pages Functions)
-      // ============================================
+    // Async initialization to check if edge functions are available
+    const initialize = async () => {
+      const secureEnabled = await isSecureStatsEnabledAsync();
       
-      // 1. Fetch initial stats
-      getStats().then((initialStats) => {
-        if (initialStats) {
-          setStats((prev) => ({
-            ...prev,
-            totalPrompts: initialStats.totalPrompts,
-          }));
-          setIsConnected(true);
-        }
-      });
+      if (!isMounted) return;
       
-      // 2. Subscribe to real-time stats updates via SSE
-      const unsubscribeStats = subscribeToStats((newStats) => {
+      setIsDemoMode(!secureEnabled);
+      
+      if (import.meta.env.DEV) {
+        console.log('[useGlobalStats] Mode:', secureEnabled ? 'SECURE' : 'DEMO');
+      }
+      
+      // Set up presence callback for this component
+      const presenceCallback: PresenceCallback = (onlineCount, generatingCount) => {
         setStats((prev) => ({
           ...prev,
-          ...newStats,
+          onlineUsers: Math.max(1, onlineCount),
+          generatingUsers: generatingCount,
         }));
-        setIsConnected(true);
-      });
-      
-      return () => {
-        unsubscribeStats();
-        presenceCallbacks.delete(presenceCallback);
-        presenceSubscriberCount--;
-        console.log('[useGlobalStats] Subscriber count after cleanup:', presenceSubscriberCount);
-        
-        // Only cleanup presence when all subscribers are gone
-        if (presenceSubscriberCount === 0) {
-          cleanupPresence();
-        }
       };
-    } else {
-      // ============================================
-      // DEMO MODE (localStorage + BroadcastChannel)
-      // ============================================
       
-      // Subscribe to demo stats changes
-      const unsubscribe = subscribeToDemoStats((newStats) => {
-        setStats(newStats);
-        setIsConnected(true);
-      });
+      // Register presence callback
+      presenceCallbacks.add(presenceCallback);
+      presenceSubscriberCount++;
       
-      return () => {
-        unsubscribe();
-        presenceCallbacks.delete(presenceCallback);
-        presenceSubscriberCount--;
-        console.log('[useGlobalStats] Subscriber count after cleanup:', presenceSubscriberCount);
+      if (import.meta.env.DEV) {
+        console.log('[useGlobalStats] Subscriber count:', presenceSubscriberCount);
+      }
+      
+      // Initialize presence if this is the first subscriber
+      if (!presenceSetupRef.current) {
+        presenceSetupRef.current = true;
+        initializePresence();
+      }
+      
+      if (secureEnabled) {
+        // ============================================
+        // SECURE MODE (Cloudflare Pages Functions)
+        // ============================================
         
-        // Only cleanup presence when all subscribers are gone
-        if (presenceSubscriberCount === 0) {
-          cleanupPresence();
-        }
-      };
-    }
+        // 1. Fetch initial stats
+        getStats().then((initialStats) => {
+          if (initialStats && isMounted) {
+            setStats((prev) => ({
+              ...prev,
+              totalPrompts: initialStats.totalPrompts,
+            }));
+            setIsConnected(true);
+          }
+        });
+        
+        // 2. Subscribe to real-time stats updates via SSE
+        const unsubscribeStats = subscribeToStats((newStats) => {
+          if (isMounted) {
+            setStats((prev) => ({
+              ...prev,
+              ...newStats,
+            }));
+            setIsConnected(true);
+          }
+        });
+        
+        // Store cleanup for later
+        cleanupRef.current = () => {
+          unsubscribeStats();
+          presenceCallbacks.delete(presenceCallback);
+          presenceSubscriberCount--;
+          
+          if (import.meta.env.DEV) {
+            console.log('[useGlobalStats] Subscriber count after cleanup:', presenceSubscriberCount);
+          }
+          
+          if (presenceSubscriberCount === 0) {
+            cleanupPresence();
+          }
+        };
+      } else {
+        // ============================================
+        // DEMO MODE (localStorage + BroadcastChannel)
+        // ============================================
+        
+        // Subscribe to demo stats changes
+        const unsubscribe = subscribeToDemoStats((newStats) => {
+          if (isMounted) {
+            setStats(newStats);
+            setIsConnected(true);
+          }
+        });
+        
+        // Store cleanup for later
+        cleanupRef.current = () => {
+          unsubscribe();
+          presenceCallbacks.delete(presenceCallback);
+          presenceSubscriberCount--;
+          
+          if (import.meta.env.DEV) {
+            console.log('[useGlobalStats] Subscriber count after cleanup:', presenceSubscriberCount);
+          }
+          
+          if (presenceSubscriberCount === 0) {
+            cleanupPresence();
+          }
+        };
+      }
+    };
+    
+    initialize();
+    
+    return () => {
+      isMounted = false;
+      cleanupRef.current?.();
+    };
   }, []);
 
   /**
@@ -216,11 +253,16 @@ export function useGlobalStats() {
   const setGenerating = useCallback((generating: boolean) => {
     // Use module-level state to avoid duplicate calls across hook instances
     if (sharedGeneratingState === generating) {
-      console.log('[useGlobalStats] Generating status unchanged:', generating);
+      if (import.meta.env.DEV) {
+        console.log('[useGlobalStats] Generating status unchanged:', generating);
+      }
       return;
     }
     sharedGeneratingState = generating;
-    console.log('[useGlobalStats] Setting generating status to:', generating);
+    
+    if (import.meta.env.DEV) {
+      console.log('[useGlobalStats] Setting generating status to:', generating);
+    }
     
     // Update via the singleton presence manager
     if (singletonPresenceManager) {

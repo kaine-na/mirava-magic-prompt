@@ -41,15 +41,82 @@ const STATS_STREAM_API = '/api/stats/stream';
 // Check if we're in development mode (Vite dev server)
 const isDevelopment = import.meta.env.DEV;
 
-// In development, the edge functions aren't available, so we use demo mode
-// In production on Cloudflare Pages, the functions are automatically available
+// Track if edge functions are available (detected at runtime)
+let edgeFunctionsAvailable: boolean | null = null;
+let edgeFunctionsCheckPromise: Promise<boolean> | null = null;
+
+/**
+ * Check if edge functions are available by making a test request
+ * Results are cached after first check
+ */
+async function checkEdgeFunctionsAvailable(): Promise<boolean> {
+  // Already checked
+  if (edgeFunctionsAvailable !== null) {
+    return edgeFunctionsAvailable;
+  }
+  
+  // Check in progress
+  if (edgeFunctionsCheckPromise) {
+    return edgeFunctionsCheckPromise;
+  }
+  
+  // In dev mode, skip the check
+  if (isDevelopment) {
+    edgeFunctionsAvailable = false;
+    return false;
+  }
+  
+  // Make a test request to the stats API
+  edgeFunctionsCheckPromise = (async () => {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000); // 3s timeout
+      
+      const response = await fetch(STATS_API, {
+        method: 'GET',
+        signal: controller.signal,
+        headers: { 'Accept': 'application/json' },
+      });
+      
+      clearTimeout(timeoutId);
+      
+      // 200 = working, 503/404 = not deployed
+      edgeFunctionsAvailable = response.ok;
+      
+      if (!response.ok) {
+        if (import.meta.env.DEV) {
+          console.log('[Stats API] Edge functions not available (status:', response.status, '), using demo mode');
+        }
+      }
+      
+      return edgeFunctionsAvailable;
+    } catch (error) {
+      // Network error, timeout, or CORS - fallback to demo mode
+      edgeFunctionsAvailable = false;
+      if (import.meta.env.DEV) {
+        console.log('[Stats API] Edge functions check failed, using demo mode');
+      }
+      return false;
+    }
+  })();
+  
+  return edgeFunctionsCheckPromise;
+}
+
+// Synchronous check (for initial render, returns conservative false if unknown)
 export const isSecureStatsEnabled = (): boolean => {
-  // In dev mode, always use demo mode (edge functions not available)
+  // In dev mode, always use demo mode
   if (isDevelopment) {
     return false;
   }
-  // In production, stats API is available via edge functions
-  return true;
+  // If we haven't checked yet, return false (use demo mode)
+  // The async check will update this later
+  return edgeFunctionsAvailable === true;
+};
+
+// Async check for initialization
+export const isSecureStatsEnabledAsync = async (): Promise<boolean> => {
+  return checkEdgeFunctionsAvailable();
 };
 
 // ============================================================================
@@ -284,7 +351,10 @@ const getDemoStats = (): GlobalStats => {
  */
 const notifyDemoSubscribers = (): void => {
   const stats = getDemoStats();
-  console.log('[Stats Demo] Notifying', demoSubscribers.size, 'subscribers with stats:', stats);
+  
+  if (import.meta.env.DEV) {
+    console.log('[Stats Demo] Notifying', demoSubscribers.size, 'subscribers with stats:', stats);
+  }
   
   // Use setTimeout to ensure React state updates are processed properly
   // This breaks out of the current execution context
@@ -292,15 +362,21 @@ const notifyDemoSubscribers = (): void => {
     let count = 0;
     demoSubscribers.forEach((callback) => {
       const id = subscriberIds.get(callback) ?? -1;
-      console.log('[Stats Demo] Calling subscriber #' + id);
+      if (import.meta.env.DEV) {
+        console.log('[Stats Demo] Calling subscriber #' + id);
+      }
       try {
         callback(stats);
         count++;
       } catch (e) {
-        console.error('[Stats] Error in demo stats callback:', e);
+        if (import.meta.env.DEV) {
+          console.error('[Stats] Error in demo stats callback:', e);
+        }
       }
     });
-    console.log('[Stats Demo] Called', count, 'subscribers successfully');
+    if (import.meta.env.DEV) {
+      console.log('[Stats Demo] Called', count, 'subscribers successfully');
+    }
   }, 0);
 };
 
@@ -345,16 +421,23 @@ export const incrementPromptCountDemo = async (): Promise<void> => {
 export const subscribeToDemoStats = (callback: DemoStatsCallback): (() => void) => {
   const id = ++subscriberIdCounter;
   subscriberIds.set(callback, id);
-  console.log('[Stats Demo] Adding subscriber #' + id + ', total:', demoSubscribers.size + 1);
+  
+  if (import.meta.env.DEV) {
+    console.log('[Stats Demo] Adding subscriber #' + id + ', total:', demoSubscribers.size + 1);
+  }
   demoSubscribers.add(callback);
   
   // Immediately call with current stats
   const currentStats = getDemoStats();
-  console.log('[Stats Demo] Initial callback for subscriber #' + id + ' with:', currentStats);
+  if (import.meta.env.DEV) {
+    console.log('[Stats Demo] Initial callback for subscriber #' + id + ' with:', currentStats);
+  }
   callback(currentStats);
   
   return () => {
-    console.log('[Stats Demo] Removing subscriber #' + id + ', remaining:', demoSubscribers.size - 1);
+    if (import.meta.env.DEV) {
+      console.log('[Stats Demo] Removing subscriber #' + id + ', remaining:', demoSubscribers.size - 1);
+    }
     demoSubscribers.delete(callback);
     subscriberIds.delete(callback);
   };
@@ -365,14 +448,19 @@ export const subscribeToDemoStats = (callback: DemoStatsCallback): (() => void) 
  */
 export const setUserOnlineDemo = (): (() => void) => {
   if (typeof localStorage === 'undefined' || demoIsOnline) {
-    console.log('[Stats Demo] Already online or localStorage unavailable');
+    if (import.meta.env.DEV) {
+      console.log('[Stats Demo] Already online or localStorage unavailable');
+    }
     return () => {};
   }
   
   demoIsOnline = true;
   const current = parseInt(localStorage.getItem(STORAGE_KEYS.ONLINE_USERS) || '0', 10);
   const newCount = current + 1;
-  console.log('[Stats Demo] Setting user online. Count:', current, '->', newCount);
+  
+  if (import.meta.env.DEV) {
+    console.log('[Stats Demo] Setting user online. Count:', current, '->', newCount);
+  }
   localStorage.setItem(STORAGE_KEYS.ONLINE_USERS, String(newCount));
   broadcastDemoChange();
   
@@ -380,7 +468,9 @@ export const setUserOnlineDemo = (): (() => void) => {
     if (!demoIsOnline) return;
     demoIsOnline = false;
     const updated = Math.max(0, parseInt(localStorage.getItem(STORAGE_KEYS.ONLINE_USERS) || '1', 10) - 1);
-    console.log('[Stats Demo] User going offline. Count ->', updated);
+    if (import.meta.env.DEV) {
+      console.log('[Stats Demo] User going offline. Count ->', updated);
+    }
     localStorage.setItem(STORAGE_KEYS.ONLINE_USERS, String(updated));
     broadcastDemoChange();
   };
@@ -400,21 +490,29 @@ export const setUserOnlineDemo = (): (() => void) => {
 export const setUserGeneratingDemo = (generating: boolean): void => {
   if (typeof localStorage === 'undefined') return;
   if (generating === demoIsGenerating) {
-    console.log('[Stats Demo] Generating status unchanged:', generating);
+    if (import.meta.env.DEV) {
+      console.log('[Stats Demo] Generating status unchanged:', generating);
+    }
     return;
   }
   
-  console.log('[Stats Demo] Updating generating status to:', generating);
+  if (import.meta.env.DEV) {
+    console.log('[Stats Demo] Updating generating status to:', generating);
+  }
   demoIsGenerating = generating;
   const current = parseInt(localStorage.getItem(STORAGE_KEYS.GENERATING_USERS) || '0', 10);
   
   if (generating) {
     const newCount = current + 1;
-    console.log('[Stats Demo] Incrementing generating count:', current, '->', newCount);
+    if (import.meta.env.DEV) {
+      console.log('[Stats Demo] Incrementing generating count:', current, '->', newCount);
+    }
     localStorage.setItem(STORAGE_KEYS.GENERATING_USERS, String(newCount));
   } else {
     const newCount = Math.max(0, current - 1);
-    console.log('[Stats Demo] Decrementing generating count:', current, '->', newCount);
+    if (import.meta.env.DEV) {
+      console.log('[Stats Demo] Decrementing generating count:', current, '->', newCount);
+    }
     localStorage.setItem(STORAGE_KEYS.GENERATING_USERS, String(newCount));
   }
   
@@ -427,11 +525,15 @@ export const setUserGeneratingDemo = (generating: boolean): void => {
 function createDemoPresence(
   onPresenceChange: (online: number, generating: number) => void
 ): PresenceManager {
-  console.log('[Stats Demo] Creating demo presence manager');
+  if (import.meta.env.DEV) {
+    console.log('[Stats Demo] Creating demo presence manager');
+  }
   
   // Set up listener
   const callback: DemoStatsCallback = (stats) => {
-    console.log('[Stats Demo] Presence callback - online:', stats.onlineUsers, 'generating:', stats.generatingUsers);
+    if (import.meta.env.DEV) {
+      console.log('[Stats Demo] Presence callback - online:', stats.onlineUsers, 'generating:', stats.generatingUsers);
+    }
     onPresenceChange(stats.onlineUsers, stats.generatingUsers);
   };
   
@@ -442,16 +544,22 @@ function createDemoPresence(
   
   // Then notify with current stats
   const initialStats = getDemoStats();
-  console.log('[Stats Demo] Initial stats:', initialStats);
+  if (import.meta.env.DEV) {
+    console.log('[Stats Demo] Initial stats:', initialStats);
+  }
   callback(initialStats);
   
   return {
     setGenerating: async (generating: boolean) => {
-      console.log('[Stats Demo] setGenerating called:', generating);
+      if (import.meta.env.DEV) {
+        console.log('[Stats Demo] setGenerating called:', generating);
+      }
       setUserGeneratingDemo(generating);
     },
     cleanup: () => {
-      console.log('[Stats Demo] Cleaning up demo presence');
+      if (import.meta.env.DEV) {
+        console.log('[Stats Demo] Cleaning up demo presence');
+      }
       demoSubscribers.delete(callback);
       cleanupOnline();
     },
