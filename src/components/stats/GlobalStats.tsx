@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Flame, Users, Zap, Wifi, WifiOff } from 'lucide-react';
+import { Flame, Users, Zap, Wifi, WifiOff, FlaskConical } from 'lucide-react';
 import { useGlobalStats } from '@/hooks/useGlobalStats';
 import { cn } from '@/lib/utils';
 
@@ -101,9 +101,10 @@ function StatItem({
  * - Total prompts generated
  * - Online users
  * - Currently generating
+ * - Demo mode indicator when Supabase is not configured
  */
 export function GlobalStats() {
-  const { stats, isConnected } = useGlobalStats();
+  const { stats, isConnected, isDemoMode } = useGlobalStats();
   const [isVisible, setIsVisible] = useState(false);
 
   // Fade in on mount
@@ -135,14 +136,28 @@ export function GlobalStats() {
       >
         {/* Connection status indicator */}
         <div className="flex items-center gap-1.5">
-          {isConnected ? (
-            <Wifi className="h-3 w-3 text-green-500" strokeWidth={2.5} />
+          {isDemoMode ? (
+            <>
+              <FlaskConical className="h-3 w-3 text-amber-500" strokeWidth={2.5} />
+              <span className="text-[10px] text-amber-500 font-medium hidden lg:inline">
+                Demo
+              </span>
+            </>
+          ) : isConnected ? (
+            <>
+              <Wifi className="h-3 w-3 text-green-500" strokeWidth={2.5} />
+              <span className="text-[10px] text-muted-foreground hidden lg:inline">
+                Live
+              </span>
+            </>
           ) : (
-            <WifiOff className="h-3 w-3 text-muted-foreground animate-pulse" strokeWidth={2.5} />
+            <>
+              <WifiOff className="h-3 w-3 text-muted-foreground animate-pulse" strokeWidth={2.5} />
+              <span className="text-[10px] text-muted-foreground hidden lg:inline">
+                Connecting...
+              </span>
+            </>
           )}
-          <span className="text-[10px] text-muted-foreground hidden lg:inline">
-            {isConnected ? 'Live' : 'Connecting...'}
-          </span>
         </div>
 
         {/* Divider */}
