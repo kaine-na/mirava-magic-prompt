@@ -9,6 +9,7 @@ import { PromptHistoryPanel } from "@/components/prompt/PromptHistoryPanel";
 import { useApiKey } from "@/hooks/useApiKey";
 import { useCustomModels } from "@/hooks/useCustomModels";
 import { usePromptHistory, PromptHistoryItem } from "@/hooks/usePromptHistory";
+import { useGlobalStats } from "@/hooks/useGlobalStats";
 import { generatePromptBatch, generatePrompt, DEFAULT_PROMPT_LENGTH } from "@/lib/generatePrompt";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
@@ -56,6 +57,7 @@ export default function PromptGenerator() {
   const { provider, model, selectedCustomModelId, currentApiKey, hasApiKey } = useApiKey();
   const { customModels } = useCustomModels();
   const { history, addToHistory, removeFromHistory, toggleFavorite, clearHistory } = usePromptHistory();
+  const { incrementPrompt, setGenerating } = useGlobalStats();
   const { toast } = useToast();
 
   const selectedCustomModel = provider === "custom" 
@@ -130,6 +132,8 @@ const handleGenerate = async () => {
     }
 
     setIsLoading(true);
+    // Set generating status for global stats
+    setGenerating(true);
     // Initialize with empty placeholders to show loading state for each slot
     setGeneratedPrompts(new Array(batchSize).fill(null));
     setProgress({ completed: 0, total: batchSize });
@@ -159,6 +163,9 @@ const handleGenerate = async () => {
             updated[index] = prompt;
             return updated;
           });
+          
+          // Increment global prompt count for EACH individual prompt
+          incrementPrompt();
           
           // Save to history immediately when ready
           if (!savedToHistory.has(index)) {
@@ -196,6 +203,8 @@ const handleGenerate = async () => {
       setGeneratedPrompts(prev => prev.filter(p => p !== null));
     } finally {
       setIsLoading(false);
+      // Clear generating status for global stats
+      setGenerating(false);
     }
   };
   
@@ -227,6 +236,7 @@ const handleCopyAll = async () => {
     if (!hasValidKey) return;
 
     setRegeneratingIndex(index);
+    setGenerating(true);
     
     try {
       const result = await generatePrompt({
@@ -247,6 +257,9 @@ const handleCopyAll = async () => {
         return updated;
       });
       
+      // Increment global prompt count for regenerated prompt
+      incrementPrompt();
+      
       addToHistory({
         promptType,
         userInput,
@@ -265,6 +278,7 @@ const handleCopyAll = async () => {
       });
     } finally {
       setRegeneratingIndex(null);
+      setGenerating(false);
     }
   };
 

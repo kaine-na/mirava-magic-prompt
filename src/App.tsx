@@ -7,6 +7,7 @@ import { ThemeProvider } from "next-themes";
 import PromptGenerator from "./pages/PromptGenerator";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
+import { GlobalStats } from "./components/stats/GlobalStats";
 
 const queryClient = new QueryClient();
 
@@ -24,6 +25,8 @@ const App = () => (
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
+        {/* Global Stats Bar - Shows real-time animated stats at bottom of page */}
+        <GlobalStats />
       </TooltipProvider>
     </ThemeProvider>
   </QueryClientProvider>
