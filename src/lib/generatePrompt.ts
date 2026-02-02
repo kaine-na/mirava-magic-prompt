@@ -25,31 +25,36 @@ export const MIN_PROMPT_LENGTH = 10;
 export const MAX_PROMPT_LENGTH = 500;
 
 /** Minimum tokens to generate */
-export const MIN_TOKENS = 50;
+export const MIN_TOKENS = 100;
 
 /** Maximum tokens to generate */
-export const MAX_TOKENS = 1200;
+export const MAX_TOKENS = 2500;
 
 /**
  * Calculate max_tokens based on target word count.
- * Uses approximately 2x multiplier (buffer for formatting).
+ * Uses approximately 3.5x multiplier for comprehensive output.
  * 
- * Formula: maxTokens = Math.ceil(targetWords * 2)
- * Clamped between MIN_TOKENS (50) and MAX_TOKENS (1200)
+ * Why 3.5x? 
+ * - Average word is ~1.3 tokens
+ * - System instructions and formatting overhead
+ * - Ensures model has room for full, detailed prompts
+ * 
+ * Formula: maxTokens = Math.ceil(targetWords * 3.5)
+ * Clamped between MIN_TOKENS (100) and MAX_TOKENS (2500)
  * 
  * @param targetWords - Target word count (10-500)
  * @returns Calculated max_tokens value
  * 
  * @example
- * calculateMaxTokens(50)  // returns 100
- * calculateMaxTokens(100) // returns 200
- * calculateMaxTokens(200) // returns 400
- * calculateMaxTokens(300) // returns 600
- * calculateMaxTokens(500) // returns 1000
+ * calculateMaxTokens(50)  // returns 175
+ * calculateMaxTokens(100) // returns 350
+ * calculateMaxTokens(200) // returns 700
+ * calculateMaxTokens(300) // returns 1050
+ * calculateMaxTokens(500) // returns 1750
  */
 export function calculateMaxTokens(targetWords: number): number {
   const clampedWords = Math.max(MIN_PROMPT_LENGTH, Math.min(MAX_PROMPT_LENGTH, targetWords));
-  const calculatedTokens = Math.ceil(clampedWords * 2);
+  const calculatedTokens = Math.ceil(clampedWords * 3.5);
   return Math.max(MIN_TOKENS, Math.min(MAX_TOKENS, calculatedTokens));
 }
 
@@ -121,11 +126,13 @@ function getPromptLengthInstructions(targetWords: number): string {
   const validatedLength = validatePromptLength(targetWords);
   
   if (validatedLength < 50) {
-    return `Generate a prompt with approximately ${validatedLength} words. Be CONCISE and FOCUSED. Include only the essential elements: subject and primary style. No unnecessary details.`;
+    return `Generate a prompt with EXACTLY ${validatedLength} words (count them!). Be CONCISE and FOCUSED. Include only the essential elements: subject and primary style. No unnecessary details.`;
   } else if (validatedLength <= 150) {
-    return `Generate a prompt with approximately ${validatedLength} words. Include subject, style, lighting, and mood. Balance brevity with descriptive detail.`;
+    return `Generate a prompt with EXACTLY ${validatedLength} words (count them!). Include subject, style, lighting, and mood. Balance brevity with descriptive detail. Count your words to ensure you meet the target.`;
+  } else if (validatedLength <= 300) {
+    return `Generate a DETAILED prompt with EXACTLY ${validatedLength} words (count them!). Be highly descriptive with comprehensive coverage of: subject, style, mood, lighting, composition, atmosphere, textures, colors, artistic techniques, and camera angles. You MUST reach the word count target.`;
   } else {
-    return `Generate a COMPREHENSIVE prompt with approximately ${validatedLength} words. Be highly descriptive with extensive coverage of: subject, style, mood, lighting, composition, atmosphere, textures, colors, artistic techniques, camera angles, and environmental details.`;
+    return `Generate a COMPREHENSIVE and EXTENSIVE prompt with EXACTLY ${validatedLength} words (count them!). This is a LONG prompt requirement. Be EXTREMELY detailed and thorough with exhaustive coverage of: subject (detailed description), artistic style, mood and emotion, lighting setup, composition and framing, atmosphere and ambiance, textures and materials, color palette, artistic techniques, camera angles and perspective, environmental details, time of day, weather, reflections, shadows, depth, foreground/background elements, and any other relevant visual details. DO NOT stop early - you MUST write the full ${validatedLength} words. Keep adding descriptive details until you reach the target.`;
   }
 }
 

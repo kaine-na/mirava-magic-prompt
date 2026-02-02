@@ -128,14 +128,9 @@ export function subscribeToStats(
         });
       }
     )
-    .subscribe((status) => {
-      if (status === 'SUBSCRIBED') {
-        console.log('✅ Subscribed to stats realtime updates');
-      }
-    });
+    .subscribe();
   
   return () => {
-    console.log('🔌 Unsubscribing from stats realtime');
     supabase.removeChannel(channel);
   };
 }
@@ -202,7 +197,6 @@ export function trackPresence(
           id: uniqueId,
           generating: false,
         });
-        console.log('✅ User presence tracked');
       }
     });
   
@@ -228,7 +222,6 @@ export function trackPresence(
    * Cleanup: untrack and remove channel
    */
   const cleanup = (): void => {
-    console.log('🔌 Cleaning up presence');
     channel.untrack();
     supabase.removeChannel(channel);
   };
